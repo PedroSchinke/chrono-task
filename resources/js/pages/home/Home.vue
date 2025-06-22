@@ -1,15 +1,15 @@
 <script setup>
-import GanttChart from "./components/GanttChart.vue";
-import Machines from "./components/Machines.vue";
+import GraficoGantt from "./components/GraficoGantt.vue";
+import Maquinas from "./components/Maquinas.vue";
 
 defineProps(['mensagem'])
 </script>
 
 <template>
     <main class="main">
-        <GanttChart />
+        <GraficoGantt />
 
-        <Machines />
+        <Maquinas />
     </main>
 </template>
 
