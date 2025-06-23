@@ -1,36 +1,29 @@
 <script setup>
-import { computed } from 'vue';
+import Toast from "primevue/toast";
+import TarefaGantt from "@/pages/home/components/TarefaGantt.vue";
 
-const props = defineProps(['tarefa', 'dias']);
+const props = defineProps(['maquina', 'dias']);
+const emit = defineEmits(['reposicionar']);
 
-const diasEntre = (inicio, fim) => {
-    const oneDay = 1000 * 60 * 60 * 24
-    return Math.round((new Date(fim) - new Date(inicio)) / oneDay)
+const reposicionarTarefa = (data) => {
+    emit('reposicionar', data);
 }
-
-const blocoStyle = computed(() => {
-    const totalDias = props.dias.length;
-    const inicio = diasEntre(props.dias[0], props.tarefa.inicio);
-    const duracao = diasEntre(props.tarefa.inicio, props.tarefa.fim);
-
-    return {
-        left: `${inicio * 100}px`,
-        width: `${(duracao + 1) * 100}px`,
-        backgroundColor: props.tarefa.cor
-    }
-})
 </script>
 
 <template>
+    <Toast />
+
     <div class="gantt-row">
-        <div class="task-label">{{ tarefa.titulo }}</div>
+        <div class="task-label">{{ maquina.nome }}</div>
 
         <div class="row-content">
-            <div class="tarefa-bloco" :style="blocoStyle">
-                <div class="bloco-texto">
-                    {{ tarefa.maquina.nome }}
-                </div>
-            </div>
+            <TarefaGantt
+                v-for="tarefa in props.maquina.tarefas"
+                :tarefa="tarefa"
+                :dias="props.dias"
+                :maquina="props.maquina"
+                @reposicionar="(data) => reposicionarTarefa(data)"
+            />
         </div>
     </div>
 
@@ -39,6 +32,7 @@ const blocoStyle = computed(() => {
 
 <style scoped>
 .gantt-row {
+    position: relative;
     display: flex;
     min-height: 60px;
 }
@@ -56,22 +50,6 @@ const blocoStyle = computed(() => {
 .row-content {
     position: relative;
     flex: 1;
-}
-
-.tarefa-bloco {
-    position: absolute;
-    height: 100%;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    padding: 0 5px;
-}
-
-.bloco-texto {
-    white-space: nowrap;
 }
 
 .divisor-linhas {

@@ -62,8 +62,8 @@ class TarefaController extends Controller
         foreach ($diasDaSemana as $dia) {
             $horarioDisponivel = HorarioDisponivel::query()
                 ->where('id_maquina', $request->get('id_maquina'))
-                ->where('hora_inicio',  $horaInicio)
-                ->where('hora_fim',  $horaFim)
+                ->whereTime('hora_inicio', '<=',  $horaInicio)
+                ->whereTime('hora_fim', '>=', $horaFim)
                 ->where('dia_semana', $dia)
                 ->exists();
 
@@ -111,9 +111,36 @@ class TarefaController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Maquina $maquina)
+    public function update(Request $request, $tarefa_id)
     {
-        //
+        $request->validate([
+            'inicio' => 'required|string',
+            'fim' => 'required|string',
+        ]);
+
+        $tarefa = Tarefa::find($tarefa_id);
+
+        $tarefa->update([
+            'inicio' =>  $request->get('inicio'),
+            'fim' =>  $request->get('fim')
+        ]);
+
+        return response()->json(['mensagem' => 'Tarefa movida com sucesso!', 204]);
+    }
+
+    public function alterarCor(Request $request, $tarefa_id)
+    {
+        $request->validate([
+            'cor' => 'required|string'
+        ]);
+
+        $tarefa = Tarefa::find($tarefa_id);
+
+        $tarefa->update([
+            'cor' => $request->get('cor')
+        ]);
+
+        return response()->json(['mensagem' => 'Cor da tarefa alterada com sucesso!', 204]);
     }
 
     /**

@@ -1,14 +1,13 @@
 <script setup>
-import { ref, onMounted, reactive } from "vue";
-import { useToast } from "primevue/usetoast";
-import api from "@/axios.js";
+import { ref } from "vue";
 import Toast from 'primevue/toast';
 import Button from "primevue/button";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import AdicionarMaquina from "./AdicionarMaquina.vue";
 
-const maquinas = ref([]);
+const props = defineProps(['maquinas', 'loadingMaquinas']);
+const emit = defineEmits(['recarregarMaquinas']);
 
 const colunas = ref([
     { label: 'Segunda', name: 'segunda' },
@@ -18,41 +17,9 @@ const colunas = ref([
     { label: 'Sexta', name: 'sexta' },
     { label: 'Sabado', name: 'sabado' },
     { label: 'Domingo', name: 'domingo' },
-])
-
-const pagination = reactive({
-    page: 1,
-    perPage: 100,
-    offset: 0,
-    total: 0
-});
-
-const loadingMaquinas = ref(false);
+]);
 
 const adicionarMaquinaDialog = ref(null);
-
-const toast = useToast();
-
-onMounted(() => {
-    getMaquinas();
-});
-
-const getMaquinas = async () => {
-    loadingMaquinas.value = true;
-
-    try {
-        const resp = await api.get('/maquinas');
-
-        maquinas.value = resp.data.data;
-        handlePagination(resp.data);
-    } catch (e) {
-        loadingMaquinas.value = false;
-
-        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível carregar máquinas', life: 3000 });
-    }
-
-    loadingMaquinas.value = false;
-}
 
 const exibirHorariosDisponiveis = (diaSemana, maquina, chave) => {
     if (!maquina.horarios_disponiveis) return '';
@@ -65,18 +32,15 @@ const adicionarMaquina = () => {
     adicionarMaquinaDialog.value.openDialog();
 }
 
-const handlePagination = (data) => {
-    pagination.page = data.current_page;
-    pagination.perPage = data.per_page;
-    pagination.offset = data.offset;
-    pagination.total = data.total;
+const recarregarMaquinas = () => {
+    emit('recarregarMaquinas');
 }
 </script>
 
 <template>
     <Toast />
 
-    <AdicionarMaquina ref="adicionarMaquinaDialog" @recarregar-maquinas="getMaquinas()" />
+    <AdicionarMaquina ref="adicionarMaquinaDialog" @recarregar-maquinas="recarregarMaquinas()" />
 
     <main>
         <header>
