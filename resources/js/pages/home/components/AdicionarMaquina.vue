@@ -141,13 +141,13 @@ defineExpose({ openDialog, closeDialog });
 
     <Dialog header="Adicionar Máquina" v-model:visible="dialogVisible">
         <form class="dialog-content">
-            <InputText placeholder="Nome da máquina" v-model="nome"/>
+            <InputText placeholder="Nome" v-model="nome"/>
 
             <MultiSelect
                 v-model="diasDaSemanaSelecionados"
                 :options="diasDaSemana"
                 optionLabel="label"
-                placeholder="Selecione os dias da semana"
+                placeholder="Disponibilidade"
                 class="w-full md:w-80"
             />
 
@@ -159,20 +159,29 @@ defineExpose({ openDialog, closeDialog });
 
                     <div class="hora-inputs-container">
                         <div class="hora-input">
-                            <label>Das</label>
+                            <label for="hora-inicio-input">Das</label>
+
                             <DatePicker
                                 v-model="dia.hora_inicio"
-                                :default-value="dia.hora_inicio"
+                                input-id="hora-inicio-input"
                                 timeOnly
                                 fluid
-                                step-minute="5"
+                                :step-minute="5"
                                 style="width: 70px;"
                             />
                         </div>
 
                         <div class="hora-input">
-                            <label>Até</label>
-                            <DatePicker v-model="dia.hora_fim" timeOnly fluid step-minute="5" style="width: 70px;" />
+                            <label for="hora-fim-input">Até</label>
+
+                            <DatePicker
+                                v-model="dia.hora_fim"
+                                input-id="hora-fim-input"
+                                timeOnly
+                                fluid
+                                :step-minute="5"
+                                style="width: 70px;"
+                            />
                         </div>
                     </div>
                 </div>
