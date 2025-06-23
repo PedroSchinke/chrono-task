@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Helpers\DateHelper;
 use App\Http\Services\HorarioDisponivelService;
 use App\Models\Maquina;
-use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,13 +20,44 @@ class MaquinaController extends Controller
 
     /**
      * Display a listing of the resource.
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
-        $maquinas = Maquina::with(['horariosDisponiveis'])->get();
+        $maquinas = Maquina::query();
+
+        if ($request->filled('nome')) {
+            $maquinas->where('nome', 'like', '%' . $request->input('nome') . '%');
+        }
+
+        $temFiltroDeData = $request->filled('data_inicio') &&
+            $request->filled('data_fim') &&
+            $request->filled('periodo_diario_inicio') &&
+            $request->filled('periodo_diario_fim');
+
+        if ($temFiltroDeData) {
+            $dataInicio = DateHelper::formatarData($request->input('data_inicio'));
+            $dataFim = DateHelper::formatarData($request->input('data_fim'));
+            $horaInicio = DateHelper::formatarData($request->input('periodo_diario_inicio'), 'H:i');
+            $horaFim = DateHelper::formatarData($request->input('periodo_diario_fim'), 'H:i');
+
+            $diasSemana = DateHelper::getDiasDaSemana($dataInicio, $dataFim);
+
+            $quantidadeDias = count($diasSemana);
+
+            $maquinas->whereHas('horariosDisponiveis', function ($query) use ($diasSemana, $horaInicio, $horaFim) {
+                $query->whereIn('dia_semana', $diasSemana)
+                      ->whereTime('hora_inicio', '<=', $horaInicio)
+                      ->whereTime('hora_fim', '>=', $horaFim);
+            }, '=', $quantidadeDias);
+        } else {
+            $maquinas->with('horariosDisponiveis');
+        }
 
         return response()->json([
-            'data' => $maquinas,
+            'data' => $maquinas->get(),
         ]);
     }
 
@@ -39,6 +71,9 @@ class MaquinaController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
     public function store(Request $request)
     {
