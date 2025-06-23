@@ -53,7 +53,7 @@ class MaquinaController extends Controller
                       ->whereTime('hora_fim', '>=', $horaFim);
             }, '=', $quantidadeDias);
         } else {
-            $maquinas->with('horariosDisponiveis');
+            $maquinas->with(['horariosDisponiveis', 'tarefas']);
         }
 
         return response()->json([

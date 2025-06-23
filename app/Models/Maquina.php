@@ -15,4 +15,9 @@ class Maquina extends Model
     {
         return $this->hasMany(HorarioDisponivel::class, 'id_maquina', 'id');
     }
+
+    public function tarefas()
+    {
+        return $this->hasMany(Tarefa::class, 'id_maquina', 'id');
+    }
 }
