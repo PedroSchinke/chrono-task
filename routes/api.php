@@ -1,8 +1,9 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MaquinaController;
 use App\Http\Controllers\TarefaController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HorarioDisponivelController;
 
 /**
  * Máquinas
@@ -15,5 +16,10 @@ Route::post('/maquina', [MaquinaController::class, 'store']);
  */
 Route::get('/tarefas', [TarefaController::class, 'index']);
 Route::post('/tarefa', [TarefaController::class, 'store']);
+Route::post('/tarefa/{tarefa_id}', [TarefaController::class, 'update']);
+Route::post('/tarefa/{tarefa_id}/cor', [TarefaController::class, 'alterarCor']);
 
-
+/**
+ * Horários Disponíveis
+ */
+Route::get('/horarios-disponiveis', [HorarioDisponivelController::class, 'index']);
