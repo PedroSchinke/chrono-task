@@ -20,7 +20,9 @@ const blocoFoiArrastado = ref(false);
 
 const dragging = ref(false);
 const dragStartX = ref(0);
+const dragStartY = ref(0);
 const offsetX = ref(0);
+const offsetY = ref(0);
 
 const diasEntre = (inicio, fim) => {
     return dayjs(fim).startOf('day').diff(dayjs(inicio), 'day');
@@ -31,11 +33,13 @@ const blocoStyle = computed(() => {
     const duracao = diasEntre(props.tarefa.inicio, props.tarefa.fim);
 
     let left = dragging.value ? inicio * 100 + offsetX.value : inicio * 100;
+    let top = dragging.value ? offsetY.value : 0;
 
     left = left < 0 ? 0 : left;
 
     return {
         left: `${left}px`,
+        top: `${top}px`,
         width: `${(duracao + 1) * 100}px`,
         backgroundColor: cor.value.includes('#') ? cor.value : '#' + cor.value,
         cursor: 'grab',
@@ -47,6 +51,7 @@ const startDrag = (event) => {
     dragging.value = true;
     blocoFoiArrastado.value = false;
     dragStartX.value = event.clientX;
+    dragStartY.value = event.clientY;
 
     document.addEventListener('mousemove', onDrag);
     document.addEventListener('mouseup', stopDrag);
@@ -60,6 +65,7 @@ const onDrag = (event) => {
     }
 
     offsetX.value = event.clientX - dragStartX.value;
+    offsetY.value = event.clientY - dragStartY.value;
 }
 
 const stopDrag = () => {
@@ -70,10 +76,13 @@ const stopDrag = () => {
     const deslocamento = offsetX.value / 100;
 
     const deslocamentoInteiros = deslocamento > 0
-        ? Math.floor(deslocamento)
-        : Math.ceil(deslocamento);
+                                 ? Math.floor(deslocamento)
+                                 : Math.ceil(deslocamento);
 
-    if (deslocamentoInteiros !== 0 || deslocamento % 1 > 0.8 || deslocamento % 1 < -0.8) {
+    const deslocamentoY = offsetY.value;
+    let deslocamentoMaquina = Math.trunc(offsetY.value / 60);
+
+    if (deslocamentoInteiros !== 0 || deslocamento % 1 > 0.8 || deslocamento % 1 < -0.8 || deslocamentoMaquina !== 0) {
         let deslocamentoDias = deslocamentoInteiros;
 
         if (deslocamento % 1 > 0.8) {
@@ -84,7 +93,7 @@ const stopDrag = () => {
             deslocamentoDias--;
         }
 
-        emit('reposicionar', { tarefa: props.tarefa, deslocamento: deslocamentoDias });
+        emit('reposicionar', { tarefa: props.tarefa, deslocamento: deslocamentoDias, posY: deslocamentoY });
     }
 
     offsetX.value = 0;
@@ -174,27 +183,6 @@ const toggle = (event) => {
 </template>
 
 <style scoped>
-.gantt-row {
-    position: relative;
-    display: flex;
-    min-height: 60px;
-}
-
-.task-label {
-    width: 200px;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    background: #18181b;
-    border-right: 1px solid #27272a;
-    white-space: break-spaces;
-}
-
-.row-content {
-    position: relative;
-    flex: 1;
-}
-
 .tarefa-bloco {
     height: 100%;
     display: flex;
@@ -209,16 +197,6 @@ const toggle = (event) => {
 .bloco-texto {
     white-space: break-spaces;
     text-align: center;
-}
-
-.divisor-linhas {
-    position: absolute;
-    right: 30px;
-    left: 28px;
-    margin: 0;
-    height: 1px;
-    background: rgb(39, 39, 42);
-    border: none;
 }
 
 .popover-header {

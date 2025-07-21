@@ -13,7 +13,7 @@ const reposicionarTarefa = (data) => {
 <template>
     <Toast />
 
-    <div class="gantt-row">
+    <div class="gantt-row" :id="`linha-maquina-${maquina.id}`">
         <div class="task-label">{{ maquina.nome }}</div>
 
         <div class="row-content">
@@ -44,6 +44,7 @@ const reposicionarTarefa = (data) => {
     align-items: center;
     background: #18181b;
     border-right: 1px solid #27272a;
+    border-bottom: 1px solid #27272a;
     white-space: break-spaces;
 }
 

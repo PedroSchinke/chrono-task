@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useToast } from "primevue/usetoast";
 import api from "@/axios.js";
 import dayjs from "dayjs";
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import Toast from "primevue/toast";
+import Select from 'primevue/select';
 import Button from "primevue/button";
 import AdicionarTarefa from "./AdicionarTarefa.vue";
 import LinhaGantt from './LinhaGantt.vue';
@@ -13,15 +14,50 @@ dayjs.extend(isSameOrBefore);
 
 const toast = useToast();
 
-const props = defineProps(['maquinas']);
+const props = defineProps(['maquinas' , 'horariosDisponiveis']);
 const emit = defineEmits(['recarregarMaquinas']);
-
-const horariosDisponiveis = ref([]);
 
 const adicionarTarefaDialog = ref(null);
 
-const qtdDiasExibidos = ref(60);
-const dias = getDates(dayjs().startOf('day'), dayjs().add(qtdDiasExibidos.value, 'day'));
+const qtdDiasExibidos = ref({
+    dias: 14,
+    label: '2 semanas'
+});
+
+const qtdDiasOption = [
+    {
+        dias: 7,
+        label: '1 semana'
+    },
+    {
+        dias: 14,
+        label: '2 semanas'
+    },
+    {
+        dias: 31,
+        label: '1 mês'
+    },
+    {
+        dias: 61,
+        label: '2 meses'
+    },
+    {
+        dias: 185,
+        label: '6 meses'
+    },
+    {
+        dias: 365,
+        label: '1 ano'
+    },
+    {
+        dias: 730,
+        label: '2 anos'
+    },
+];
+
+const dias = computed(() => {
+    return getDates(dayjs().startOf('day'), dayjs().add(qtdDiasExibidos.value.dias, 'day'));
+});
 
 function getDates(startDate, stopDate) {
     const dateArray = [];
@@ -35,28 +71,25 @@ function getDates(startDate, stopDate) {
     return dateArray;
 }
 
-onMounted(() => {
-    getHorariosDisponiveis();
-});
+const reposicionarTarefa = async ({ tarefa, deslocamento, posY }) => {
+    let idMaquina = tarefa.id_maquina;
+    let deslocamentoMaquina = Math.trunc(posY / 60);
 
-const getHorariosDisponiveis = async () => {
-    try {
-        const resp = await api.get('/horarios-disponiveis');
+    if (deslocamentoMaquina !== 0) {
+        const maquinaIndex = props.maquinas.findIndex((maquina) => {
+            return maquina.id === tarefa.id_maquina;
+        });
 
-        horariosDisponiveis.value = resp.data.data;
-    } catch (e) {
-        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível buscar horários disponíveis', life: 3000 });
+        idMaquina = props.maquinas[maquinaIndex + deslocamentoMaquina].id;
     }
-}
 
-const reposicionarTarefa = async ({ tarefa, deslocamento }) => {
     const novaDataInicio = dayjs(tarefa.inicio).add(deslocamento, 'day');
     const novaDataFim = dayjs(tarefa.fim).add(deslocamento, 'day');
 
     const diasReposicionamento = getDates(novaDataInicio, novaDataFim);
 
     try {
-        validarHorarios(tarefa, diasReposicionamento);
+        validarHorarios(tarefa, diasReposicionamento, idMaquina);
 
         tarefa.inicio = novaDataInicio.format('YYYY-MM-DD HH:mm:ss');
         tarefa.fim = novaDataFim.format('YYYY-MM-DD HH:mm:ss');
@@ -64,6 +97,7 @@ const reposicionarTarefa = async ({ tarefa, deslocamento }) => {
         await api.post(`/tarefa/${tarefa.id}`, {
             inicio: novaDataInicio.format('YYYY-MM-DD'),
             fim: novaDataFim.format('YYYY-MM-DD'),
+            id_maquina: idMaquina
         });
     } catch (e) {
         if (e instanceof HorarioIndisponivelError) {
@@ -94,9 +128,9 @@ class HorarioIndisponivelError extends Error {
     }
 }
 
-const validarHorarios = (tarefa, diasReposicionamento) => {
-    const horariosDisponiveisDaMaquina = horariosDisponiveis.value.filter((horario) => {
-        return horario.id_maquina == tarefa.id_maquina;
+const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
+    const horariosDisponiveisDaMaquina = props.horariosDisponiveis.filter((horario) => {
+        return horario.id_maquina == idMaquina;
     });
 
     diasReposicionamento.forEach((dia) => {
@@ -142,11 +176,23 @@ const getDiaSemana = (index) => {
     <header>
         <h1>Tarefas</h1>
 
-        <Button title="Adicionar Tarefa" icon="pi pi-plus" rounded @click="adicionarTarefa()" />
+        <div>
+            <Select
+                v-model="qtdDiasExibidos"
+                :options="qtdDiasOption"
+                option-label="label"
+                placeholder="Selecione o período"
+                :default-value="qtdDiasExibidos"
+                checkmark
+                :highlightOnSelect="false"
+            />
+
+            <Button title="Adicionar Tarefa" icon="pi pi-plus" rounded @click="adicionarTarefa()" />
+        </div>
     </header>
 
     <div class="gantt-chart">
-        <div class="gantt-header" :style="`grid-template-columns: 200px repeat(${qtdDiasExibidos + 1}, 100px)`">
+        <div class="gantt-header" :style="`grid-template-columns: 200px repeat(${qtdDiasExibidos.dias + 1}, 100px)`">
             <div class="task-label-header">Máquina</div>
             <div v-for="dia in dias" :key="dia" class="day-header">
                 <span>{{ dia.format('DD/MM') }}</span>
@@ -172,6 +218,13 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+header div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 .gantt-chart {

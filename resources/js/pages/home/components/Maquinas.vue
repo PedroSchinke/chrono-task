@@ -7,7 +7,7 @@ import Column from "primevue/column";
 import AdicionarMaquina from "./AdicionarMaquina.vue";
 
 const props = defineProps(['maquinas', 'loadingMaquinas']);
-const emit = defineEmits(['recarregarMaquinas']);
+const emit = defineEmits(['recarregarMaquinas', 'recarregarHorariosDisponiveis']);
 
 const colunas = ref([
     { label: 'Segunda', name: 'segunda' },
@@ -34,6 +34,7 @@ const adicionarMaquina = () => {
 
 const recarregarMaquinas = () => {
     emit('recarregarMaquinas');
+    emit('recarregarHorariosDisponiveis');
 }
 </script>
 
@@ -49,7 +50,11 @@ const recarregarMaquinas = () => {
             <Button title="Adicionar Máquina" icon="pi pi-plus" rounded @click="adicionarMaquina()" />
         </header>
 
-        <DataTable :value="maquinas" :loading="loadingMaquinas" >
+        <DataTable :value="maquinas" :loading="loadingMaquinas">
+            <template #empty>
+                <p style="text-align: center;">Não existem máquinas cadastradas</p>
+            </template>
+
             <Column header="Máquina" field="nome" />
 
             <Column v-for="coluna of colunas" :header="coluna.label">
