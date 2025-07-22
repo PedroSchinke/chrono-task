@@ -12,8 +12,9 @@ const toast = useToast();
 const props = defineProps(['tarefa', 'dias', 'maquina']);
 const emit = defineEmits(['reposicionar']);
 
-const cor = ref(props.tarefa.cor);
-const alterandoCor = ref(false);
+const cor = computed(() => {
+    return props.tarefa.cor.startsWith('#') ? props.tarefa.cor : `#${props.tarefa.cor}`;
+});
 
 const tarefaPopover = ref();
 const blocoFoiArrastado = ref(false);
@@ -25,10 +26,10 @@ const offsetX = ref(0);
 const offsetY = ref(0);
 
 const diasEntre = (inicio, fim) => {
-    return dayjs(fim).startOf('day').diff(dayjs(inicio), 'day');
+    return dayjs(fim).startOf('day').diff(dayjs(inicio).startOf('day'), 'day');
 }
 
-const blocoStyle = computed(() => {
+const  blocoStyle = computed(() => {
     const inicio = diasEntre(props.dias[0], props.tarefa.inicio);
     const duracao = diasEntre(props.tarefa.inicio, props.tarefa.fim);
 
@@ -41,7 +42,7 @@ const blocoStyle = computed(() => {
         left: `${left}px`,
         top: `${top}px`,
         width: `${(duracao + 1) * 100}px`,
-        backgroundColor: cor.value.includes('#') ? cor.value : '#' + cor.value,
+        backgroundColor: cor.value,
         cursor: 'grab',
         position: 'absolute',
     }
@@ -100,19 +101,11 @@ const stopDrag = () => {
 }
 
 const alterarCor = async (event) => {
-    if (alterandoCor.value) return;
-
-    alterandoCor.value = true;
-
     const params = { cor: '#' + event.value };
 
     try {
         const resp = await api.post(`/tarefa/${props.tarefa.id}/cor`, params);
-
-        alterandoCor.value = false;
     } catch (e) {
-        alterandoCor.value = false;
-
         cor.value = props.tarefa.cor;
 
         toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível alterar a cor', life: 3000 });
