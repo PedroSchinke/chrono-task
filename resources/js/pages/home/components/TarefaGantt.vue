@@ -139,7 +139,7 @@ const toggle = (event) => {
             <div class="popover-header">
                 <h2 style="margin-top: 5px;">{{ props.tarefa.titulo }}</h2>
 
-                <ColorPicker v-model="cor" style="margin-bottom: 15px;" @change="alterarCor" />
+                <ColorPicker v-model="cor" style="margin-bottom: 15px;" @it change="alterarCor" />
             </div>
 
             <div class="popover-tarefa-infos">
