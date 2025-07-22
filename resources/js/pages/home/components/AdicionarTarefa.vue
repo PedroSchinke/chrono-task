@@ -163,6 +163,8 @@ defineExpose({ openDialog, closeDialog });
                 show-icon
                 selectionMode="range"
                 show-button-bar
+                show-time
+                :step-minute="30"
                 @clear-click="form.datas = []"
             />
 
