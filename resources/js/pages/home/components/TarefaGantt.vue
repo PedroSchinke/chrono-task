@@ -18,7 +18,7 @@ import AutoComplete from "primevue/autocomplete";
 const toast = useToast();
 
 const props = defineProps(['tarefa', 'dias', 'maquina', 'horariosDisponiveis']);
-const emit = defineEmits(['reposicionar']);
+const emit = defineEmits(['reposicionar', 'recarregar']);
 
 const loading = ref(false);
 
@@ -52,9 +52,21 @@ const diasEntre = (inicio, fim) => {
     return dayjs(fim).startOf('day').diff(dayjs(inicio).startOf('day'), 'day');
 }
 
-const  blocoStyle = computed(() => {
-    const inicio = diasEntre(props.dias[0], props.tarefa.inicio);
-    const duracao = diasEntre(props.tarefa.inicio, props.tarefa.fim);
+const blocoStyle = computed(() => {
+    const inicioOriginal = diasEntre(props.dias[0], props.tarefa.inicio);
+    const duracaoOriginal = diasEntre(props.tarefa.inicio, props.tarefa.fim);
+
+    let inicio = inicioOriginal;
+    let duracao = duracaoOriginal;
+
+    if (resizing.value) {
+        if (resizeDirection.value === 'start') {
+            inicio += resizeDiffDias.value;
+            duracao -= resizeDiffDias.value;
+        } else if (resizeDirection.value === 'end') {
+            duracao += resizeDiffDias.value;
+        }
+    }
 
     let left = dragging.value ? inicio * 100 + offsetX.value : inicio * 100;
     let top = dragging.value ? offsetY.value : 0;
@@ -68,8 +80,102 @@ const  blocoStyle = computed(() => {
         backgroundColor: props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor,
         cursor: 'grab',
         position: 'absolute',
-    }
+    };
 });
+
+const resizeMode = ref(null);
+const resizeStartX = ref(0);
+
+const resizing = ref(false);
+const resizeDirection = ref(null);
+const resizeDiffDias = ref(0);
+
+const startResize = (mode, event) => {
+    resizing.value = true;
+    resizeDirection.value = mode;
+    resizeStartX.value = event.clientX;
+
+    resizeDiffDias.value = 0;
+
+    blocoFoiArrastado.value = false;
+
+    document.addEventListener('mousemove', onResize);
+    document.addEventListener('mouseup', stopResize);
+};
+
+const onResize = (event) => {
+    const diffPx = event.clientX - resizeStartX.value;
+    const diffDias = Math.round(diffPx / 100);
+
+    if (diffPx > 5 || diffPx < -5) {
+        blocoFoiArrastado.value = true;
+    }
+
+    resizeDiffDias.value = diffDias;
+};
+
+const stopResize = async () => {
+    if (resizeDiffDias.value !== 0) {
+        const novaTarefa = { ...props.tarefa };
+
+        if (resizeDirection.value === 'start') {
+            novaTarefa.inicio = dayjs(props.tarefa.inicio).add(resizeDiffDias.value, 'day').format('YYYY-MM-DD');
+        } else if (resizeDirection.value === 'end') {
+            novaTarefa.fim = dayjs(props.tarefa.fim).add(resizeDiffDias.value, 'day').format('YYYY-MM-DD');
+        }
+
+        try {
+            resizing.value = false;
+            resizeDirection.value = null;
+            resizeDiffDias.value = 0;
+
+            document.removeEventListener('mousemove', onResize);
+            document.removeEventListener('mouseup', stopResize);
+
+            const diasReposicionamento = getDates(dayjs(novaTarefa.inicio), dayjs(novaTarefa.fim));
+
+            diasReposicionamento.forEach((dia) => {
+                const diaSemana = getDiaSemana(dia.day()).name;
+
+                const disponivel = props.maquina.horarios_disponiveis.some((horario) => {
+                    return diaSemana === horario.dia_semana &&
+                        popoverForm.periodo_diario_inicio >= horario.hora_inicio.slice(0, 5) &&
+                        popoverForm.periodo_diario_fim <= horario.hora_fim.slice(0, 5);
+                });
+
+                if (!disponivel) {
+                    throw new HorarioIndisponivelError(
+                        'Não foi possível salvar alterações da tarefa',
+                        'Horário indisponível para a máquina'
+                    );
+                }
+
+            });
+
+            loading.value = true;
+
+            const params = {
+                inicio: novaTarefa.inicio,
+                fim: novaTarefa.fim,
+                id_maquina: props.tarefa.id_maquina,
+            }
+
+            await api.post(`/tarefa/${props.tarefa.id}/reposicionar`, params);
+
+            loading.value = false;
+
+            emit('recarregar');
+        } catch (e) {
+            loading.value = false;
+
+            if (e instanceof HorarioIndisponivelError) {
+                toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
+            } else {
+                toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
+            }
+        }
+    }
+};
 
 const startDrag = (event) => {
     dragging.value = true;
@@ -100,8 +206,8 @@ const stopDrag = () => {
     const deslocamento = offsetX.value / 100;
 
     const deslocamentoInteiros = deslocamento > 0
-                                 ? Math.floor(deslocamento)
-                                 : Math.ceil(deslocamento);
+        ? Math.floor(deslocamento)
+        : Math.ceil(deslocamento);
 
     const deslocamentoY = offsetY.value;
     let deslocamentoMaquina = Math.trunc(offsetY.value / 60);
@@ -172,8 +278,8 @@ const validarHorarios = () => {
 
         const disponivel = horariosDisponiveisDaMaquina.some((horario) => {
             return diaSemana === horario.dia_semana &&
-                popoverForm.periodo_diario_inicio >= horario.hora_inicio &&
-                popoverForm.periodo_diario_fim <= horario.hora_fim;
+                popoverForm.periodo_diario_inicio >= horario.hora_inicio.slice(0, 5) &&
+                popoverForm.periodo_diario_fim <= horario.hora_fim.slice(0, 5);
         });
 
         if (!disponivel) {
@@ -228,12 +334,13 @@ const resetarDados = () => {
         :id="`tarefa-${tarefa.id}`"
         :style="blocoStyle"
         class="tarefa-bloco"
-        @mousedown="startDrag"
         @click="toggle"
     >
-        <div class="bloco-texto">
-            {{ props.tarefa.titulo }}
-        </div>
+        <div class="resize-handle left" @mousedown="startResize('start', $event)"></div>
+
+        <div class="bloco-texto" @mousedown="startDrag">{{ props.tarefa.titulo }}</div>
+
+        <div class="resize-handle right" @mousedown="startResize('end', $event)"></div>
     </div>
 
     <Popover ref="tarefaPopover" @hide="resetarDados()">
@@ -349,7 +456,35 @@ const resetarDados = () => {
     z-index: 10;
 }
 
+.tarefa-bloco {
+    position: absolute;
+    cursor: grab;
+}
+
+.resize-handle {
+    position: absolute;
+    width: 5%;
+    top: 0;
+    bottom: 0;
+    z-index: 10;
+}
+
+.resize-handle.left {
+    left: 0;
+    cursor: w-resize;
+}
+
+.resize-handle.right {
+    right: 0;
+    cursor: e-resize;
+}
+
 .bloco-texto {
+    width: 90%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     white-space: break-spaces;
     text-align: center;
 }
