@@ -91,10 +91,11 @@ const resizeDirection = ref(null);
 const resizeDiffDias = ref(0);
 
 const startResize = (mode, event) => {
+    event.preventDefault();
+
     resizing.value = true;
     resizeDirection.value = mode;
     resizeStartX.value = event.clientX;
-
     resizeDiffDias.value = 0;
 
     blocoFoiArrastado.value = false;
@@ -115,67 +116,67 @@ const onResize = (event) => {
 };
 
 const stopResize = async () => {
-    if (resizeDiffDias.value !== 0) {
-        const novaTarefa = { ...props.tarefa };
+    window.removeEventListener('mousemove', onResize);
+    window.removeEventListener('mouseup', stopResize);
 
-        if (resizeDirection.value === 'start') {
-            novaTarefa.inicio = dayjs(props.tarefa.inicio).add(resizeDiffDias.value, 'day').format('YYYY-MM-DD');
-        } else if (resizeDirection.value === 'end') {
-            novaTarefa.fim = dayjs(props.tarefa.fim).add(resizeDiffDias.value, 'day').format('YYYY-MM-DD');
-        }
+    resizing.value = false;
+    const diff = resizeDiffDias.value;
+    const direction = resizeDirection.value;
 
-        try {
-            resizing.value = false;
-            resizeDirection.value = null;
-            resizeDiffDias.value = 0;
+    resizeDirection.value = null;
+    resizeDiffDias.value = 0;
 
-            document.removeEventListener('mousemove', onResize);
-            document.removeEventListener('mouseup', stopResize);
+    if (diff === 0) return;
 
-            const diasReposicionamento = getDates(dayjs(novaTarefa.inicio), dayjs(novaTarefa.fim));
+    const novaTarefa = { ...props.tarefa };
 
-            diasReposicionamento.forEach((dia) => {
-                const diaSemana = getDiaSemana(dia.day()).name;
+    if (direction === 'start') {
+        novaTarefa.inicio = dayjs(props.tarefa.inicio).add(diff, 'day').format('YYYY-MM-DD');
+    } else if (direction === 'end') {
+        novaTarefa.fim = dayjs(props.tarefa.fim).add(diff, 'day').format('YYYY-MM-DD');
+    }
 
-                const disponivel = props.maquina.horarios_disponiveis.some((horario) => {
-                    return diaSemana === horario.dia_semana &&
-                        popoverForm.periodo_diario_inicio >= horario.hora_inicio.slice(0, 5) &&
-                        popoverForm.periodo_diario_fim <= horario.hora_fim.slice(0, 5);
-                });
+    try {
+        const diasReposicionamento = getDates(dayjs(novaTarefa.inicio), dayjs(novaTarefa.fim));
 
-                if (!disponivel) {
-                    throw new HorarioIndisponivelError(
-                        'Não foi possível salvar alterações da tarefa',
-                        'Horário indisponível para a máquina'
-                    );
-                }
+        diasReposicionamento.forEach((dia) => {
+            const diaSemana = getDiaSemana(dia.day()).name;
 
+            const disponivel = props.maquina.horarios_disponiveis.some((horario) => {
+                return diaSemana === horario.dia_semana &&
+                    popoverForm.periodo_diario_inicio >= horario.hora_inicio.slice(0, 5) &&
+                    popoverForm.periodo_diario_fim <= horario.hora_fim.slice(0, 5);
             });
 
-            loading.value = true;
-
-            const params = {
-                inicio: novaTarefa.inicio,
-                fim: novaTarefa.fim,
-                id_maquina: props.tarefa.id_maquina,
+            if (!disponivel) {
+                throw new HorarioIndisponivelError(
+                    'Não foi possível salvar alterações da tarefa',
+                    'Horário indisponível para a máquina'
+                );
             }
+        });
 
-            await api.post(`/tarefa/${props.tarefa.id}/reposicionar`, params);
+        loading.value = true;
 
-            loading.value = false;
+        const params = {
+            inicio: novaTarefa.inicio,
+            fim: novaTarefa.fim,
+            id_maquina: props.tarefa.id_maquina,
+        };
 
-            emit('recarregar');
-        } catch (e) {
-            loading.value = false;
+        await api.post(`/tarefa/${props.tarefa.id}/reposicionar`, params);
 
-            if (e instanceof HorarioIndisponivelError) {
-                toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
-            } else {
-                toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
-            }
+        emit('recarregar');
+    } catch (e) {
+        if (e instanceof HorarioIndisponivelError) {
+            toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
+        } else {
+            toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
         }
+    } finally {
+        loading.value = false;
     }
-};
+}
 
 const startDrag = (event) => {
     dragging.value = true;
