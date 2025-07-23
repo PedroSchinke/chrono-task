@@ -113,6 +113,27 @@ class TarefaController extends Controller
      */
     public function update(Request $request, $tarefa_id)
     {
+        $tarefa = Tarefa::find($tarefa_id);
+
+        $inicio = DateHelper::formatarData($request->get('inicio'));
+        $fim = DateHelper::formatarData($request->get('fim'));
+
+        $tarefa->update([
+            'titulo' => $request->get('titulo'),
+            'descricao' => $request->get('descricao'),
+            'id_maquina' => $request->get('id_maquina'),
+            'inicio' => $inicio,
+            'fim' => $fim,
+            'periodo_diario_inicio' => $request->get('periodo_diario_inicio'),
+            'periodo_diario_fim' => $request->get('periodo_diario_fim'),
+            'cor' => $request->get('cor')
+        ]);
+
+        return response()->json(['mensagem' => 'Tarefa movida com sucesso!', 204]);
+    }
+
+    public function reposicionarTarefa(Request $request, $tarefa_id)
+    {
         $request->validate([
             'inicio' => 'required|string',
             'fim' => 'required|string',

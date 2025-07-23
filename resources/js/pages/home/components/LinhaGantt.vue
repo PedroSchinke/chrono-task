@@ -2,11 +2,15 @@
 import Toast from "primevue/toast";
 import TarefaGantt from "@/pages/home/components/TarefaGantt.vue";
 
-const props = defineProps(['maquina', 'dias']);
-const emit = defineEmits(['reposicionar']);
+const props = defineProps(['maquina', 'dias', 'horariosDisponiveis']);
+const emit = defineEmits(['reposicionar', 'recarregar']);
 
 const reposicionarTarefa = (data) => {
     emit('reposicionar', data);
+}
+
+const recarregar = () => {
+    emit('recarregar');
 }
 </script>
 
@@ -22,7 +26,9 @@ const reposicionarTarefa = (data) => {
                 :tarefa="tarefa"
                 :dias="props.dias"
                 :maquina="props.maquina"
+                :horarios-disponiveis="props.horariosDisponiveis"
                 @reposicionar="(data) => reposicionarTarefa(data)"
+                @recarregar="recarregar()"
             />
         </div>
     </div>

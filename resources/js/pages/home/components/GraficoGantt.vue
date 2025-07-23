@@ -1,6 +1,9 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useToast } from "primevue/usetoast";
+import { getDates } from "@/helpers/getDates.js";
+import { getDiaSemana } from "@/helpers/getDiaSemana.js";
+import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
 import api from "@/axios.js";
 import dayjs from "dayjs";
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -9,6 +12,7 @@ import Select from 'primevue/select';
 import Button from "primevue/button";
 import AdicionarTarefa from "./AdicionarTarefa.vue";
 import LinhaGantt from './LinhaGantt.vue';
+import ModalLoading from "@/components/ModalLoading.vue";
 
 dayjs.extend(isSameOrBefore);
 
@@ -55,21 +59,12 @@ const qtdDiasOption = [
     },
 ];
 
+const loading = ref(false);
+const loadingMessage = ref('Carregando...');
+
 const dias = computed(() => {
     return getDates(dayjs().startOf('day'), dayjs().add(qtdDiasExibidos.value.dias, 'day'));
 });
-
-function getDates(startDate, stopDate) {
-    const dateArray = [];
-    let currentDate = startDate;
-
-    while (currentDate.isSameOrBefore(stopDate)) {
-        dateArray.push(currentDate);
-        currentDate = currentDate.add(1, 'day');
-    }
-
-    return dateArray;
-}
 
 const reposicionarTarefa = async ({ tarefa, deslocamento, posY }) => {
     let idMaquina = tarefa.id_maquina;
@@ -91,15 +86,20 @@ const reposicionarTarefa = async ({ tarefa, deslocamento, posY }) => {
     try {
         validarHorarios(tarefa, diasReposicionamento, idMaquina);
 
+        loading.value = true;
+        loadingMessage.value = 'Reposicionando Tarefa...';
+
         tarefa.inicio = novaDataInicio.format('YYYY-MM-DD HH:mm:ss');
         tarefa.fim = novaDataFim.format('YYYY-MM-DD HH:mm:ss');
 
-        await api.post(`/tarefa/${tarefa.id}`, {
+        await api.post(`/tarefa/${tarefa.id}/reposicionar`, {
             inicio: novaDataInicio.format('YYYY-MM-DD'),
             fim: novaDataFim.format('YYYY-MM-DD'),
             id_maquina: idMaquina
         });
     } catch (e) {
+        loading.value = false;
+
         if (e instanceof HorarioIndisponivelError) {
             toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
         } else {
@@ -108,6 +108,8 @@ const reposicionarTarefa = async ({ tarefa, deslocamento, posY }) => {
 
         return;
     }
+
+    loading.value = false;
 
     recarregarMaquinas();
 }
@@ -118,14 +120,6 @@ const adicionarTarefa = () => {
 
 const recarregarMaquinas = () => {
     emit('recarregarMaquinas');
-}
-
-class HorarioIndisponivelError extends Error {
-    constructor(titulo, mensagem) {
-        super(mensagem);
-        this.name = "HorarioIndisponivelError";
-        this.title = titulo;
-    }
 }
 
 const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
@@ -147,29 +141,12 @@ const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
         }
     });
 }
-
-const getDiaSemana = (index) => {
-    switch (index) {
-        case 0:
-            return { label: 'Domingo', name: 'domingo'};
-        case 1:
-            return { label: 'Segunda', name: 'segunda'};
-        case 2:
-            return { label: 'Terça', name: 'terca'};
-        case 3:
-            return { label: 'Quarta', name: 'quarta'};
-        case 4:
-            return { label: 'Quinta', name: 'quinta'};
-        case 5:
-            return { label: 'Sexta', name: 'sexta'};
-        case 6:
-            return { label: 'Sábado', name: 'sabado'};
-    }
-}
 </script>
 
 <template>
     <Toast />
+
+    <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
     <AdicionarTarefa ref="adicionarTarefaDialog" @recarregar-tarefas="recarregarMaquinas()" />
 
@@ -208,7 +185,9 @@ const getDiaSemana = (index) => {
             :key="maquina.id"
             :maquina="maquina"
             :dias="dias"
+            :horarios-disponiveis="props.horariosDisponiveis"
             @reposicionar="(data) => reposicionarTarefa(data)"
+            @recarregar="recarregarMaquinas()"
         />
     </div>
 </template>
