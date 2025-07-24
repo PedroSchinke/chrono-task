@@ -17,7 +17,7 @@ import AutoComplete from "primevue/autocomplete";
 
 const toast = useToast();
 
-const props = defineProps(['tarefa', 'dias', 'maquina', 'horariosDisponiveis']);
+const props = defineProps(['tarefa', 'dias', 'tamanhoDia', 'maquina', 'horariosDisponiveis']);
 const emit = defineEmits(['reposicionar', 'recarregar']);
 
 const loading = ref(false);
@@ -53,37 +53,48 @@ const diasEntre = (inicio, fim) => {
 }
 
 const blocoStyle = computed(() => {
-    const inicioOriginal = diasEntre(props.dias[0], props.tarefa.inicio);
-    const duracaoOriginal = diasEntre(props.tarefa.inicio, props.tarefa.fim);
+    const inicioEmDias = diasEntre(props.dias[0], props.tarefa.inicio) + fracaoDoDia(props.tarefa.inicio);
+    const fimEmDias = diasEntre(props.dias[0], props.tarefa.fim) + fracaoDoDia(props.tarefa.fim);
+    let duracao = fimEmDias - inicioEmDias;
 
-    let inicio = inicioOriginal;
-    let duracao = duracaoOriginal;
+    let left = inicioEmDias * props.tamanhoDia;
+    let top = 0;
+
+    if (dragging.value) {
+        left += offsetX.value;
+        top = offsetY.value;
+    }
 
     if (resizing.value) {
+        const diff = resizeDiffDias.value;
+
         if (resizeDirection.value === 'start') {
-            inicio += resizeDiffDias.value;
-            duracao -= resizeDiffDias.value;
+            left += diff * props.tamanhoDia;
+            duracao -= diff;
         } else if (resizeDirection.value === 'end') {
-            duracao += resizeDiffDias.value;
+            duracao += diff;
         }
     }
 
-    let left = dragging.value ? inicio * 100 + offsetX.value : inicio * 100;
-    let top = dragging.value ? offsetY.value : 0;
-
-    left = left < 0 ? 0 : left;
+    if (left < 0) left = 0;
 
     return {
         left: `${left}px`,
         top: `${top}px`,
-        width: `${(duracao + 1) * 100}px`,
+        width: `${duracao * props.tamanhoDia}px`,
         backgroundColor: props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor,
         cursor: 'grab',
         position: 'absolute',
     };
 });
 
-const resizeMode = ref(null);
+function fracaoDoDia(data) {
+    const date = new Date(data);
+    const horas = date.getHours();
+    const minutos = date.getMinutes();
+    return (horas + minutos / 60) / 24; // valor entre 0 e 1
+}
+
 const resizeStartX = ref(0);
 
 const resizing = ref(false);
@@ -106,7 +117,7 @@ const startResize = (mode, event) => {
 
 const onResize = (event) => {
     const diffPx = event.clientX - resizeStartX.value;
-    const diffDias = Math.round(diffPx / 100);
+    const diffDias = Math.round(diffPx / props.tamanhoDia);
 
     if (diffPx > 5 || diffPx < -5) {
         blocoFoiArrastado.value = true;
@@ -116,8 +127,8 @@ const onResize = (event) => {
 };
 
 const stopResize = async () => {
-    window.removeEventListener('mousemove', onResize);
-    window.removeEventListener('mouseup', stopResize);
+    document.removeEventListener('mousemove', onResize);
+    document.removeEventListener('mouseup', stopResize);
 
     resizing.value = false;
     const diff = resizeDiffDias.value;
@@ -204,7 +215,7 @@ const stopDrag = () => {
     document.removeEventListener('mousemove', onDrag);
     document.removeEventListener('mouseup', stopDrag);
 
-    const deslocamento = offsetX.value / 100;
+    const deslocamento = offsetX.value / props.tamanhoDia;
 
     const deslocamentoInteiros = deslocamento > 0
         ? Math.floor(deslocamento)
@@ -464,7 +475,7 @@ const resetarDados = () => {
 
 .resize-handle {
     position: absolute;
-    width: 5%;
+    width: 5px;
     top: 0;
     bottom: 0;
     z-index: 10;
@@ -481,7 +492,7 @@ const resetarDados = () => {
 }
 
 .bloco-texto {
-    width: 90%;
+    width: 100%;
     height: 100%;
     display: flex;
     align-items: center;

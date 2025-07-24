@@ -2,7 +2,7 @@
 import Toast from "primevue/toast";
 import TarefaGantt from "@/pages/home/components/TarefaGantt.vue";
 
-const props = defineProps(['maquina', 'dias', 'horariosDisponiveis']);
+const props = defineProps(['maquina', 'dias', 'tamanhoDia', 'horariosDisponiveis']);
 const emit = defineEmits(['reposicionar', 'recarregar']);
 
 const reposicionarTarefa = (data) => {
@@ -25,6 +25,7 @@ const recarregar = () => {
                 v-for="tarefa in props.maquina.tarefas"
                 :tarefa="tarefa"
                 :dias="props.dias"
+                :tamanho-dia="props.tamanhoDia"
                 :maquina="props.maquina"
                 :horarios-disponiveis="props.horariosDisponiveis"
                 @reposicionar="(data) => reposicionarTarefa(data)"

@@ -10,6 +10,7 @@ import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import Toast from "primevue/toast";
 import Select from 'primevue/select';
 import Button from "primevue/button";
+import Divider from 'primevue/divider';
 import AdicionarTarefa from "./AdicionarTarefa.vue";
 import LinhaGantt from './LinhaGantt.vue';
 import ModalLoading from "@/components/ModalLoading.vue";
@@ -58,6 +59,10 @@ const qtdDiasOption = [
         label: '2 anos'
     },
 ];
+
+const horasExibidas = ['00h', '06h', '12h', '18h'];
+
+const tamanhoDia = 200;
 
 const loading = ref(false);
 const loadingMessage = ref('Carregando...');
@@ -141,6 +146,12 @@ const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
         }
     });
 }
+
+const getLeftByIndex = (index) => {
+    const total = horasExibidas.length;
+
+    return (index / total) * 100;
+};
 </script>
 
 <template>
@@ -169,14 +180,35 @@ const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
     </header>
 
     <div class="gantt-chart">
-        <div class="gantt-header" :style="`grid-template-columns: 200px repeat(${qtdDiasExibidos.dias + 1}, 100px)`">
-            <div class="task-label-header">Máquina</div>
+        <div
+            class="gantt-header"
+            :style="`grid-template-columns: 200px repeat(${qtdDiasExibidos.dias + 1}, ${tamanhoDia}px)`"
+        >
+            <div class="task-label-header">
+                Máquina
+            </div>
+
             <div v-for="dia in dias" :key="dia" class="day-header">
                 <span>{{ dia.format('DD/MM') }}</span>
 
-                <span style="font-weight: normal">
+                <span style="font-weight: normal; margin-bottom: 5px;">
                     {{ getDiaSemana(dia.day()).label }}
                 </span>
+
+                <Divider style="margin: 0;" />
+
+                <div class="hours-container">
+                    <div
+                        v-for="(hora, index) in horasExibidas"
+                        :key="hora"
+                        class="hour"
+                        :style="{ left: getLeftByIndex(index) + '%' }"
+                    >
+                        <Divider style="margin: 0;" layout="vertical" />
+
+                        <span style="margin: 3px 0;">{{ hora }}</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -185,6 +217,7 @@ const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
             :key="maquina.id"
             :maquina="maquina"
             :dias="dias"
+            :tamanho-dia="tamanhoDia"
             :horarios-disponiveis="props.horariosDisponiveis"
             @reposicionar="(data) => reposicionarTarefa(data)"
             @recarregar="recarregarMaquinas()"
@@ -228,13 +261,28 @@ header div {
 }
 
 .day-header {
+    padding: 7px 0 0 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     text-align: center;
-    padding: 10px 0;
     border-left: 1px solid #27272a;
+}
+
+.hours-container {
+    position: relative;
+    width: 100%;
+    height: 26px;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.hour {
+    position: absolute;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
 }
 </style>
 
