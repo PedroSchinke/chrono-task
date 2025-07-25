@@ -2,7 +2,7 @@
 import Toast from "primevue/toast";
 import TarefaGantt from "@/pages/home/components/TarefaGantt.vue";
 
-const props = defineProps(['maquina', 'dias', 'tamanhoDia', 'horariosDisponiveis']);
+const props = defineProps(['maquina', 'dias', 'larguraDiaPx', 'alturaTarefaPx', 'horasExibidas', 'horariosDisponiveis']);
 const emit = defineEmits(['reposicionar', 'recarregar']);
 
 const reposicionarTarefa = (data) => {
@@ -17,7 +17,11 @@ const recarregar = () => {
 <template>
     <Toast />
 
-    <div class="gantt-row" :id="`linha-maquina-${maquina.id}`">
+    <div
+        class="gantt-row"
+        :id="`linha-maquina-${maquina.id}`"
+        :style="`height: ${props.alturaTarefaPx}px; max-height: ${props.alturaTarefaPx}px;`"
+    >
         <div class="task-label">{{ maquina.nome }}</div>
 
         <div class="row-content">
@@ -25,7 +29,9 @@ const recarregar = () => {
                 v-for="tarefa in props.maquina.tarefas"
                 :tarefa="tarefa"
                 :dias="props.dias"
-                :tamanho-dia="props.tamanhoDia"
+                :largura-dia-px="props.larguraDiaPx"
+                :altura-tarefa-px="props.alturaTarefaPx"
+                :horas-exibidas="props.horasExibidas"
                 :maquina="props.maquina"
                 :horarios-disponiveis="props.horariosDisponiveis"
                 @reposicionar="(data) => reposicionarTarefa(data)"
@@ -41,7 +47,6 @@ const recarregar = () => {
 .gantt-row {
     position: relative;
     display: flex;
-    min-height: 60px;
 }
 
 .task-label {

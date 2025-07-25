@@ -17,8 +17,10 @@ import AutoComplete from "primevue/autocomplete";
 
 const toast = useToast();
 
-const props = defineProps(['tarefa', 'dias', 'tamanhoDia', 'maquina', 'horariosDisponiveis']);
+const props = defineProps(['tarefa', 'dias', 'larguraDiaPx', 'alturaTarefaPx', 'horasExibidas', 'maquina', 'horariosDisponiveis']);
 const emit = defineEmits(['reposicionar', 'recarregar']);
+
+const tarefaLocal = ref({ ...props.tarefa });
 
 const loading = ref(false);
 
@@ -43,63 +45,75 @@ const tarefaPopover = ref();
 const blocoFoiArrastado = ref(false);
 
 const dragging = ref(false);
+const dragDiffX = ref(0);
+const dragDiffY = ref(0);
 const dragStartX = ref(0);
 const dragStartY = ref(0);
 const offsetX = ref(0);
 const offsetY = ref(0);
+
+const resizing = ref(false);
+const resizeStartX = ref(0);
+const resizeDirection = ref(null);
+const resizeDiff = ref(0);
 
 const diasEntre = (inicio, fim) => {
     return dayjs(fim).startOf('day').diff(dayjs(inicio).startOf('day'), 'day');
 }
 
 const blocoStyle = computed(() => {
-    const inicioEmDias = diasEntre(props.dias[0], props.tarefa.inicio) + fracaoDoDia(props.tarefa.inicio);
-    const fimEmDias = diasEntre(props.dias[0], props.tarefa.fim) + fracaoDoDia(props.tarefa.fim);
-    let duracao = fimEmDias - inicioEmDias;
+    const inicio = diasEntre(props.dias[0], tarefaLocal.value.inicio) + fracaoDoDia(tarefaLocal.value.inicio);
+    const fim = diasEntre(props.dias[0], tarefaLocal.value.fim) + fracaoDoDia(tarefaLocal.value.fim);
+    let duracao = fim - inicio;
 
-    let left = inicioEmDias * props.tamanhoDia;
+    let leftPx = inicio * props.larguraDiaPx;
+    let widthPx = duracao * props.larguraDiaPx;
     let top = 0;
 
     if (dragging.value) {
-        left += offsetX.value;
-        top = offsetY.value;
+        leftPx += dragDiffX.value * divisions.value.divisionPx;
+        top = dragDiffY.value * props.alturaTarefaPx;
     }
 
     if (resizing.value) {
-        const diff = resizeDiffDias.value;
+        const deltaPx = resizeDiff.value * divisions.value.divisionPx;
 
         if (resizeDirection.value === 'start') {
-            left += diff * props.tamanhoDia;
-            duracao -= diff;
-        } else if (resizeDirection.value === 'end') {
-            duracao += diff;
+            leftPx += deltaPx;
+            widthPx -= deltaPx;
+        } else {
+            widthPx += deltaPx;
         }
     }
 
-    if (left < 0) left = 0;
+    if (leftPx < 0) leftPx = 0;
 
     return {
-        left: `${left}px`,
+        left: `${Math.max(0, leftPx)}px`,
         top: `${top}px`,
-        width: `${duracao * props.tamanhoDia}px`,
+        width: `${widthPx}px`,
         backgroundColor: props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor,
         cursor: 'grab',
         position: 'absolute',
-    };
+    }
+});
+
+const divisions = computed(() => {
+    const divisores = props.horasExibidas.length;
+    const divisionPx = props.larguraDiaPx / divisores;
+    const divisionHours = 24 / divisores;
+    const divisionMinutes = divisionHours * 60;
+
+    return { divisores, divisionPx, divisionHours, divisionMinutes }
 });
 
 function fracaoDoDia(data) {
     const date = new Date(data);
     const horas = date.getHours();
     const minutos = date.getMinutes();
-    return (horas + minutos / 60) / 24; // valor entre 0 e 1
+
+    return (horas + minutos / 60) / 24;
 }
-
-const resizeStartX = ref(0);
-
-const resizing = ref(false);
-const resizeDirection = ref(null);
-const resizeDiffDias = ref(0);
 
 const startResize = (mode, event) => {
     event.preventDefault();
@@ -107,48 +121,44 @@ const startResize = (mode, event) => {
     resizing.value = true;
     resizeDirection.value = mode;
     resizeStartX.value = event.clientX;
-    resizeDiffDias.value = 0;
+    resizeDiff.value = 0;
 
     blocoFoiArrastado.value = false;
 
     document.addEventListener('mousemove', onResize);
     document.addEventListener('mouseup', stopResize);
-};
+}
 
 const onResize = (event) => {
     const diffPx = event.clientX - resizeStartX.value;
-    const diffDias = Math.round(diffPx / props.tamanhoDia);
+    const diff = Math.round(diffPx / divisions.value.divisionPx);
 
     if (diffPx > 5 || diffPx < -5) {
         blocoFoiArrastado.value = true;
     }
 
-    resizeDiffDias.value = diffDias;
-};
+    resizeDiff.value = diff;
+}
 
 const stopResize = async () => {
     document.removeEventListener('mousemove', onResize);
     document.removeEventListener('mouseup', stopResize);
 
     resizing.value = false;
-    const diff = resizeDiffDias.value;
-    const direction = resizeDirection.value;
+    const divs = resizeDiff.value;
 
-    resizeDirection.value = null;
-    resizeDiffDias.value = 0;
+    if (divs === 0) return;
 
-    if (diff === 0) return;
+    const minutesToAdd = divs * divisions.value.divisionMinutes;
 
-    const novaTarefa = { ...props.tarefa };
-
-    if (direction === 'start') {
-        novaTarefa.inicio = dayjs(props.tarefa.inicio).add(diff, 'day').format('YYYY-MM-DD');
-    } else if (direction === 'end') {
-        novaTarefa.fim = dayjs(props.tarefa.fim).add(diff, 'day').format('YYYY-MM-DD');
+    if (resizeDirection.value === 'start') {
+        tarefaLocal.value.inicio = dayjs(tarefaLocal.value.inicio).add(minutesToAdd, 'minute').format('YYYY-MM-DD HH:mm:ss');
+    } else if (resizeDirection.value === 'end') {
+        tarefaLocal.value.fim = dayjs(tarefaLocal.value.fim).add(minutesToAdd, 'minute').format('YYYY-MM-DD HH:mm:ss');
     }
 
     try {
-        const diasReposicionamento = getDates(dayjs(novaTarefa.inicio), dayjs(novaTarefa.fim));
+        const diasReposicionamento = getDates(dayjs(tarefaLocal.value.inicio), dayjs(tarefaLocal.value.fim));
 
         diasReposicionamento.forEach((dia) => {
             const diaSemana = getDiaSemana(dia.day()).name;
@@ -170,12 +180,12 @@ const stopResize = async () => {
         loading.value = true;
 
         const params = {
-            inicio: novaTarefa.inicio,
-            fim: novaTarefa.fim,
-            id_maquina: props.tarefa.id_maquina,
+            inicio: tarefaLocal.value.inicio,
+            fim: tarefaLocal.value.fim,
+            id_maquina: tarefaLocal.value.id_maquina,
         };
 
-        await api.post(`/tarefa/${props.tarefa.id}/reposicionar`, params);
+        await api.post(`/tarefa/${tarefaLocal.value.id}/reposicionar`, params);
 
         emit('recarregar');
     } catch (e) {
@@ -200,26 +210,30 @@ const startDrag = (event) => {
 }
 
 const onDrag = (event) => {
-    const deslocamento = Math.abs(event.clientX - dragStartX.value);
+    const deslocamentoXPx = event.clientX - dragStartX.value;
+    const deslocamentoYPx = event.clientY - dragStartY.value;
 
-    if (deslocamento > 5) {
+    if (deslocamentoXPx > 5 || deslocamentoXPx < -5 || deslocamentoYPx > 5 || deslocamentoYPx < -5) {
         blocoFoiArrastado.value = true;
     }
 
-    offsetX.value = event.clientX - dragStartX.value;
-    offsetY.value = event.clientY - dragStartY.value;
+    const deslocamentoX = Math.round(deslocamentoXPx / divisions.value.divisionPx);
+    const deslocamentoY = Math.round(deslocamentoYPx / divisions.value.divisionPx);
+
+    dragDiffX.value = deslocamentoX;
+    dragDiffY.value = deslocamentoY;
 }
 
 const stopDrag = () => {
-    dragging.value = false;
     document.removeEventListener('mousemove', onDrag);
     document.removeEventListener('mouseup', stopDrag);
+    dragging.value = false;
 
-    const deslocamento = offsetX.value / props.tamanhoDia;
+    const deslocamento = dragDiffX.value * divisions.value.divisionMinutes;
 
     const deslocamentoInteiros = deslocamento > 0
-        ? Math.floor(deslocamento)
-        : Math.ceil(deslocamento);
+                                 ? Math.floor(deslocamento)
+                                 : Math.ceil(deslocamento);
 
     const deslocamentoY = offsetY.value;
     let deslocamentoMaquina = Math.trunc(offsetY.value / 60);

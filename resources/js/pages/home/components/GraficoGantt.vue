@@ -62,7 +62,8 @@ const qtdDiasOption = [
 
 const horasExibidas = ['00h', '06h', '12h', '18h'];
 
-const tamanhoDia = 200;
+const larguraDiaPx = 200;
+const alturaTarefaPx = 60;
 
 const loading = ref(false);
 const loadingMessage = ref('Carregando...');
@@ -98,8 +99,8 @@ const reposicionarTarefa = async ({ tarefa, deslocamento, posY }) => {
         tarefa.fim = novaDataFim.format('YYYY-MM-DD HH:mm:ss');
 
         await api.post(`/tarefa/${tarefa.id}/reposicionar`, {
-            inicio: novaDataInicio.format('YYYY-MM-DD'),
-            fim: novaDataFim.format('YYYY-MM-DD'),
+            inicio: novaDataInicio.format('YYYY-MM-DD HH:mm:ss'),
+            fim: novaDataFim.format('YYYY-MM-DD HH:mm:ss'),
             id_maquina: idMaquina
         });
     } catch (e) {
@@ -182,7 +183,7 @@ const getLeftByIndex = (index) => {
     <div class="gantt-chart">
         <div
             class="gantt-header"
-            :style="`grid-template-columns: 200px repeat(${qtdDiasExibidos.dias + 1}, ${tamanhoDia}px)`"
+            :style="`grid-template-columns: 200px repeat(${qtdDiasExibidos.dias + 1}, ${larguraDiaPx}px)`"
         >
             <div class="task-label-header">
                 Máquina
@@ -217,7 +218,9 @@ const getLeftByIndex = (index) => {
             :key="maquina.id"
             :maquina="maquina"
             :dias="dias"
-            :tamanho-dia="tamanhoDia"
+            :largura-dia-px="larguraDiaPx"
+            :altura-tarefa-px="alturaTarefaPx"
+            :horas-exibidas="horasExibidas"
             :horarios-disponiveis="props.horariosDisponiveis"
             @reposicionar="(data) => reposicionarTarefa(data)"
             @recarregar="recarregarMaquinas()"
