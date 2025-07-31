@@ -27,6 +27,7 @@ const recarregar = () => {
         <div class="row-content">
             <TarefaGantt
                 v-for="tarefa in props.maquina.tarefas"
+                :key="tarefa.id"
                 :tarefa="tarefa"
                 :dias="props.dias"
                 :largura-dia-px="props.larguraDiaPx"
