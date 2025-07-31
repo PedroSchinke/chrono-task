@@ -129,7 +129,7 @@ class TarefaController extends Controller
             'cor' => $request->get('cor')
         ]);
 
-        return response()->json(['mensagem' => 'Tarefa movida com sucesso!', 204]);
+        return response()->json(['mensagem' => 'Tarefa movida com sucesso!'], 204);
     }
 
     public function reposicionarTarefa(Request $request, $tarefa_id)
@@ -147,7 +147,7 @@ class TarefaController extends Controller
             'id_maquina' => $request->get('id_maquina')
         ]);
 
-        return response()->json(['mensagem' => 'Tarefa movida com sucesso!', 204]);
+        return response()->json(['mensagem' => 'Tarefa movida com sucesso!'], 204);
     }
 
     public function alterarCor(Request $request, $tarefa_id)
@@ -162,7 +162,7 @@ class TarefaController extends Controller
             'cor' => $request->get('cor')
         ]);
 
-        return response()->json(['mensagem' => 'Cor da tarefa alterada com sucesso!', 204]);
+        return response()->json(['mensagem' => 'Cor da tarefa alterada com sucesso!'], 204);
     }
 
     /**
