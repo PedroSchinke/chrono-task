@@ -72,31 +72,29 @@ const dias = computed(() => {
     return getDates(dayjs().startOf('day'), dayjs().add(qtdDiasExibidos.value.dias, 'day'));
 });
 
-const reposicionarTarefa = async ({ tarefa, deslocamento, posY }) => {
+const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
     let idMaquina = tarefa.id_maquina;
-    let deslocamentoMaquina = Math.trunc(posY / 60);
 
-    if (deslocamentoMaquina !== 0) {
-        const maquinaIndex = props.maquinas.findIndex((maquina) => {
-            return maquina.id === tarefa.id_maquina;
+    if (deslocamentoY !== 0) {
+        const maquina = props.maquinas.find((maquina) => {
+            return maquina.id === tarefa.id_maquina + deslocamentoY;
         });
 
-        idMaquina = props.maquinas[maquinaIndex + deslocamentoMaquina].id;
+        if (maquina) {
+            idMaquina = maquina.id;
+        }
     }
 
-    const novaDataInicio = dayjs(tarefa.inicio).add(deslocamento, 'day');
-    const novaDataFim = dayjs(tarefa.fim).add(deslocamento, 'day');
+    const novaDataInicio = dayjs(tarefa.inicio).add(deslocamentoX, 'minute');
+    const novaDataFim = dayjs(tarefa.fim).add(deslocamentoX, 'minute');
 
     const diasReposicionamento = getDates(novaDataInicio, novaDataFim);
 
     try {
-        validarHorarios(tarefa, diasReposicionamento, idMaquina);
+        //validarHorarios(tarefa, diasReposicionamento, idMaquina);
 
         loading.value = true;
         loadingMessage.value = 'Reposicionando Tarefa...';
-
-        tarefa.inicio = novaDataInicio.format('YYYY-MM-DD HH:mm:ss');
-        tarefa.fim = novaDataFim.format('YYYY-MM-DD HH:mm:ss');
 
         await api.post(`/tarefa/${tarefa.id}/reposicionar`, {
             inicio: novaDataInicio.format('YYYY-MM-DD HH:mm:ss'),
@@ -129,23 +127,23 @@ const recarregarMaquinas = () => {
 }
 
 const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
-    const horariosDisponiveisDaMaquina = props.horariosDisponiveis.filter((horario) => {
-        return horario.id_maquina == idMaquina;
-    });
-
-    diasReposicionamento.forEach((dia) => {
-        const diaSemana = getDiaSemana(dia.day()).name;
-
-        const disponivel = horariosDisponiveisDaMaquina.some((horario) => {
-            return diaSemana === horario.dia_semana &&
-                   tarefa.periodo_diario_inicio >= horario.hora_inicio &&
-                   tarefa.periodo_diario_fim <= horario.hora_fim;
-        });
-
-        if (!disponivel) {
-            throw new HorarioIndisponivelError('Não foi possível mover tarefa', 'Horário indisponível');
-        }
-    });
+    // const horariosDisponiveisDaMaquina = props.horariosDisponiveis.filter((horario) => {
+    //     return horario.id_maquina == idMaquina;
+    // });
+    //
+    // diasReposicionamento.forEach((dia) => {
+    //     const diaSemana = getDiaSemana(dia.day()).name;
+    //
+    //     const disponivel = horariosDisponiveisDaMaquina.some((horario) => {
+    //         return diaSemana === horario.dia_semana &&
+    //                tarefa.periodo_diario_inicio >= horario.hora_inicio &&
+    //                tarefa.periodo_diario_fim <= horario.hora_fim;
+    //     });
+    //
+    //     if (!disponivel) {
+    //         throw new HorarioIndisponivelError('Não foi possível mover tarefa', 'Horário indisponível');
+    //     }
+    // });
 }
 
 const getLeftByIndex = (index) => {

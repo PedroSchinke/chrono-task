@@ -17,10 +17,20 @@ import AutoComplete from "primevue/autocomplete";
 
 const toast = useToast();
 
-const props = defineProps(['tarefa', 'dias', 'larguraDiaPx', 'alturaTarefaPx', 'horasExibidas', 'maquina', 'horariosDisponiveis']);
+const props = defineProps([
+    'tarefa',
+    'dias',
+    'larguraDiaPx',
+    'alturaTarefaPx',
+    'horasExibidas',
+    'maquina',
+    'horariosDisponiveis'
+]);
 const emit = defineEmits(['reposicionar', 'recarregar']);
 
-const tarefaLocal = ref({ ...props.tarefa });
+const tarefaLocal = computed(() => {
+    return { ...props.tarefa };
+});
 
 const loading = ref(false);
 
@@ -49,8 +59,6 @@ const dragDiffX = ref(0);
 const dragDiffY = ref(0);
 const dragStartX = ref(0);
 const dragStartY = ref(0);
-const offsetX = ref(0);
-const offsetY = ref(0);
 
 const resizing = ref(false);
 const resizeStartX = ref(0);
@@ -68,7 +76,7 @@ const blocoStyle = computed(() => {
 
     let leftPx = inicio * props.larguraDiaPx;
     let widthPx = duracao * props.larguraDiaPx;
-    let top = 0;
+    let top = dragDiffY.value * props.alturaTarefaPx;
 
     if (dragging.value) {
         leftPx += dragDiffX.value * divisions.value.divisionPx;
@@ -85,8 +93,6 @@ const blocoStyle = computed(() => {
             widthPx += deltaPx;
         }
     }
-
-    if (leftPx < 0) leftPx = 0;
 
     return {
         left: `${Math.max(0, leftPx)}px`,
@@ -145,37 +151,43 @@ const stopResize = async () => {
     document.removeEventListener('mouseup', stopResize);
 
     resizing.value = false;
-    const divs = resizeDiff.value;
 
-    if (divs === 0) return;
+    if (resizeDiff.value === 0) return;
 
-    const minutesToAdd = divs * divisions.value.divisionMinutes;
+    const minutesToAdd = resizeDiff.value * divisions.value.divisionMinutes;
+
+    let novoInicio = tarefaLocal.value.inicio;
+    let novoFim = tarefaLocal.value.fim;
 
     if (resizeDirection.value === 'start') {
-        tarefaLocal.value.inicio = dayjs(tarefaLocal.value.inicio).add(minutesToAdd, 'minute').format('YYYY-MM-DD HH:mm:ss');
-    } else if (resizeDirection.value === 'end') {
-        tarefaLocal.value.fim = dayjs(tarefaLocal.value.fim).add(minutesToAdd, 'minute').format('YYYY-MM-DD HH:mm:ss');
+        novoInicio = dayjs(tarefaLocal.value.inicio).add(minutesToAdd, 'minute').format('YYYY-MM-DD HH:mm:ss');
+    } else {
+        novoFim = dayjs(tarefaLocal.value.fim).add(minutesToAdd, 'minute').format('YYYY-MM-DD HH:mm:ss');
     }
 
     try {
-        const diasReposicionamento = getDates(dayjs(tarefaLocal.value.inicio), dayjs(tarefaLocal.value.fim));
+        // const diasReposicionamento = getDates(dayjs(novoInicio), dayjs(novoFim));
+        //
+        // diasReposicionamento.forEach((dia) => {
+        //     const diaSemana = getDiaSemana(dia.day()).name;
+        //
+        //     const disponivel = props.maquina.horarios_disponiveis.some((horario) => {
+        //         return diaSemana === horario.dia_semana;
+        //     });
+        //
+        //     if (!disponivel) {
+        //         throw new HorarioIndisponivelError(
+        //             'Não foi possível salvar alterações da tarefa',
+        //             'Horário indisponível para a máquina'
+        //         );
+        //     }
+        // });
 
-        diasReposicionamento.forEach((dia) => {
-            const diaSemana = getDiaSemana(dia.day()).name;
-
-            const disponivel = props.maquina.horarios_disponiveis.some((horario) => {
-                return diaSemana === horario.dia_semana &&
-                    popoverForm.periodo_diario_inicio >= horario.hora_inicio.slice(0, 5) &&
-                    popoverForm.periodo_diario_fim <= horario.hora_fim.slice(0, 5);
-            });
-
-            if (!disponivel) {
-                throw new HorarioIndisponivelError(
-                    'Não foi possível salvar alterações da tarefa',
-                    'Horário indisponível para a máquina'
-                );
-            }
-        });
+        if (resizeDirection.value === 'start') {
+            tarefaLocal.value.inicio = novoInicio;
+        } else if (resizeDirection.value === 'end') {
+            tarefaLocal.value.fim = novoFim;
+        }
 
         loading.value = true;
 
@@ -200,10 +212,14 @@ const stopResize = async () => {
 }
 
 const startDrag = (event) => {
+    event.preventDefault();
+
     dragging.value = true;
     blocoFoiArrastado.value = false;
     dragStartX.value = event.clientX;
     dragStartY.value = event.clientY;
+    dragDiffX.value = 0;
+    dragDiffY.value = 0;
 
     document.addEventListener('mousemove', onDrag);
     document.addEventListener('mouseup', stopDrag);
@@ -227,32 +243,18 @@ const onDrag = (event) => {
 const stopDrag = () => {
     document.removeEventListener('mousemove', onDrag);
     document.removeEventListener('mouseup', stopDrag);
+
     dragging.value = false;
 
-    const deslocamento = dragDiffX.value * divisions.value.divisionMinutes;
+    const deslocamentoX = dragDiffX.value * divisions.value.divisionMinutes;
+    const deslocamentoY = dragDiffY.value;
 
-    const deslocamentoInteiros = deslocamento > 0
-                                 ? Math.floor(deslocamento)
-                                 : Math.ceil(deslocamento);
+    if (deslocamentoX === 0 && deslocamentoY === 0) return;
 
-    const deslocamentoY = offsetY.value;
-    let deslocamentoMaquina = Math.trunc(offsetY.value / 60);
+    tarefaLocal.value.inicio = dayjs(tarefaLocal.value.inicio).add(deslocamentoX, 'minute').format('YYYY-MM-DD HH:mm:ss');
+    tarefaLocal.value.fim = dayjs(tarefaLocal.value.fim).add(deslocamentoX, 'minute').format('YYYY-MM-DD HH:mm:ss');
 
-    if (deslocamentoInteiros !== 0 || deslocamento % 1 > 0.8 || deslocamento % 1 < -0.8 || deslocamentoMaquina !== 0) {
-        let deslocamentoDias = deslocamentoInteiros;
-
-        if (deslocamento % 1 > 0.8) {
-            deslocamentoDias++;
-        }
-
-        if (deslocamento % 1 < -0.8) {
-            deslocamentoDias--;
-        }
-
-        emit('reposicionar', { tarefa: props.tarefa, deslocamento: deslocamentoDias, posY: deslocamentoY });
-    }
-
-    offsetX.value = 0;
+    emit('reposicionar', { tarefa: props.tarefa, deslocamentoX, deslocamentoY });
 }
 
 const salvarAlteracoesTarefa = async () => {
@@ -272,7 +274,7 @@ const salvarAlteracoesTarefa = async () => {
             cor: popoverForm.cor
         }
 
-        await api.post(`/tarefa/${props.tarefa.id}`, params);
+        await api.post(`/tarefa/${tarefaLocal.value.id}`, params);
     } catch (e) {
         loading.value = false;
 
@@ -340,14 +342,14 @@ const toggle = (event) => {
 }
 
 const resetarDados = () => {
-    popoverForm.titulo = props.tarefa.titulo;
-    popoverForm.descricao = props.tarefa.descricao;
-    popoverForm.maquina = { id: props.tarefa.id_maquina, nome: props.maquina.nome };
-    popoverForm.inicio = new Date(props.tarefa.inicio);
-    popoverForm.fim = new Date(props.tarefa.fim);
-    popoverForm.periodo_diario_inicio = props.tarefa.periodo_diario_inicio.slice(0, 5);
-    popoverForm.periodo_diario_fim = props.tarefa.periodo_diario_fim.slice(0, 5);
-    popoverForm.cor = props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor;
+    popoverForm.titulo = tarefaLocal.value.titulo;
+    popoverForm.descricao = tarefaLocal.value.descricao;
+    popoverForm.maquina = { id: tarefaLocal.value.id_maquina, nome: props.maquina.nome };
+    popoverForm.inicio = new Date(tarefaLocal.value.inicio);
+    popoverForm.fim = new Date(tarefaLocal.value.fim);
+    popoverForm.periodo_diario_inicio = tarefaLocal.value.periodo_diario_inicio.slice(0, 5);
+    popoverForm.periodo_diario_fim = tarefaLocal.value.periodo_diario_fim.slice(0, 5);
+    popoverForm.cor = tarefaLocal.value.cor.startsWith('#') ? tarefaLocal.value.cor : '#' + tarefaLocal.value.cor;
 }
 </script>
 
@@ -357,7 +359,8 @@ const resetarDados = () => {
     <ModalLoading :is-loading="loading" message="Salvando alterações..." />
 
     <div
-        :id="`tarefa-${tarefa.id}`"
+        :id="`tarefa-${tarefaLocal.id}`"
+        :key="tarefaLocal.id"
         :style="blocoStyle"
         class="tarefa-bloco"
         @click="toggle"
@@ -369,7 +372,7 @@ const resetarDados = () => {
         <div class="resize-handle right" @mousedown="startResize('end', $event)"></div>
     </div>
 
-    <Popover ref="tarefaPopover" @hide="resetarDados()">
+    <Popover ref="tarefaPopover" @hide="resetarDados()" @show="resetarDados()">
         <div class="popover-tarefa-infos">
             <div class="popover-info">
                 <span style="font-weight: bold;">Título</span>
@@ -511,8 +514,9 @@ const resetarDados = () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    white-space: break-spaces;
+    font-weight: 600;
     text-align: center;
+    white-space: break-spaces;
 }
 
 .popover-tarefa-infos {
