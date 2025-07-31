@@ -59,8 +59,6 @@ const adicionarTarefa = async () => {
         cor: '#' + form.cor
     }
 
-    console.log(params);
-
     try {
         const resp = await api.post('/tarefa', params);
     } catch (e) {
