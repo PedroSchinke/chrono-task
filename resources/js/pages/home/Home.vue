@@ -5,6 +5,7 @@ import api from "@/axios.js";
 import Toast from "primevue/toast";
 import GraficoGantt from "./components/GraficoGantt.vue";
 import Maquinas from "./components/Maquinas.vue";
+import Colaboradores from "@/pages/home/components/Colaboradores.vue";
 
 const toast = useToast();
 
@@ -54,6 +55,8 @@ const getHorariosDisponiveis = async () => {
             :horarios-disponiveis="horariosDisponiveis"
             @recarregar-maquinas="getMaquinas()"
         />
+
+        <Colaboradores />
 
         <Maquinas
             :maquinas="maquinas"
