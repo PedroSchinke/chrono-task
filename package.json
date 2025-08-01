@@ -19,9 +19,11 @@
         "@inertiajs/inertia": "^0.11.1",
         "@inertiajs/inertia-vue3": "^0.6.0",
         "@primeuix/themes": "^1.1.2",
+        "@primevue/forms": "^4.3.7",
         "dayjs": "^1.11.13",
         "primeicons": "^7.0.0",
         "primevue": "^4.3.5",
-        "vue": "^3.5.17"
+        "vue": "^3.5.17",
+        "zod": "^4.0.14"
     }
 }
