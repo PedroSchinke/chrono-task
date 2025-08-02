@@ -7,7 +7,7 @@ export function normalizeCpf(cpf) {
 }
 
 export function formatCpf(cpf) {
-    const digits = normalizeCpf(cpf);
+    const digits = normalizeCpf(cpf).toString();
 
     if (digits.length !== 11) return cpf;
 
