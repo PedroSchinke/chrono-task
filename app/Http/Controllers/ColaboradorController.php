@@ -17,7 +17,34 @@ class ColaboradorController extends Controller
      */
     public function index(Request $request)
     {
-        $colaboradores = Colaborador::with('tarefas')->get();
+        $query = Colaborador::with('tarefas');
+
+        if (!empty($request->get('id'))) {
+            $query->where('id', $request->get('id'));
+        }
+
+        if (!empty($request->get('nome'))) {
+            $query->where('nome_completo', 'like', '%' . $request->get('nome') . '%');
+        }
+
+        if (!empty($request->get('cpf'))) {
+            $query->where('cpf', 'like', '%' . $request->get('cpf') . '%');
+        }
+
+        $sortField = 'nome_completo';
+        $sortOrder = 'asc';
+
+        if (!empty($request->get('sort_field'))) {
+            $sortField = $request->get('sort_field');
+        }
+
+        if (!empty($request->get('sort_order'))) {
+            $sortOrder = $request->get('sort_order');
+        }
+
+        $query->orderBy($sortField, $sortOrder);
+
+        $colaboradores = $query->paginate($request->get('per_page', 10));
 
         return response()->json(['data' => $colaboradores]);
     }
