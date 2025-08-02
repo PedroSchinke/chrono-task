@@ -16,7 +16,6 @@ const loadingMaquinas = ref(false);
 
 onMounted(() => {
     getMaquinas();
-    getHorariosDisponiveis();
 });
 
 const getMaquinas = async () => {
@@ -33,16 +32,6 @@ const getMaquinas = async () => {
     }
 
     loadingMaquinas.value = false;
-}
-
-const getHorariosDisponiveis = async () => {
-    try {
-        const resp = await api.get('/horarios-disponiveis');
-
-        horariosDisponiveis.value = resp.data.data;
-    } catch (e) {
-        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível buscar horários disponíveis', life: 3000 });
-    }
 }
 </script>
 
@@ -62,7 +51,6 @@ const getHorariosDisponiveis = async () => {
             :maquinas="maquinas"
             :loading-maquinas="loadingMaquinas"
             @recarregar-maquinas="getMaquinas()"
-            @recarregar-horarios-disponiveis="getHorariosDisponiveis()"
         />
     </main>
 </template>

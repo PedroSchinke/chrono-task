@@ -3,28 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\DateHelper;
-use App\Http\Services\HorarioDisponivelService;
 use App\Models\Maquina;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class MaquinaController extends Controller
 {
-    private HorarioDisponivelService $horariosService;
-
-    public function __construct()
-    {
-        $this->horariosService = new HorarioDisponivelService();
-    }
-
     /**
      * Display a listing of the resource.
      *
      * @param Request $request
      * @return JsonResponse
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $maquinas = Maquina::query();
 
@@ -81,13 +72,9 @@ class MaquinaController extends Controller
             'nome' => 'required|string',
         ]);
 
-        DB::transaction(function () use ($request) {
-            $maquina = Maquina::create([
-                'nome' => $request->get('nome')
-            ]);
-
-            $this->horariosService->criarHorariosDisponiveis($maquina, $request->get('dias_horarios'));
-        });
+        Maquina::create([
+            'nome' => $request->get('nome')
+        ]);
 
         return response()->json(['mensagem' => 'Máquina criada com sucesso!'], 201);
     }
