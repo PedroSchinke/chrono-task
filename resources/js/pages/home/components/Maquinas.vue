@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from "vue";
-import Toast from 'primevue/toast';
 import Button from "primevue/button";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -39,8 +38,6 @@ const recarregarMaquinas = () => {
 </script>
 
 <template>
-    <Toast />
-
     <AdicionarMaquina ref="adicionarMaquinaDialog" @recarregar-maquinas="recarregarMaquinas()" />
 
     <main>

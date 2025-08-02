@@ -7,7 +7,6 @@ import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
 import api from "@/axios.js";
 import dayjs from "dayjs";
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import Toast from "primevue/toast";
 import Select from 'primevue/select';
 import Button from "primevue/button";
 import Divider from 'primevue/divider';
@@ -154,8 +153,6 @@ const getLeftByIndex = (index) => {
 </script>
 
 <template>
-    <Toast />
-
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
     <AdicionarTarefa ref="adicionarTarefaDialog" @recarregar-tarefas="recarregarMaquinas()" />

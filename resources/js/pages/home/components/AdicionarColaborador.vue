@@ -10,7 +10,6 @@ import InputMask from "primevue/inputmask";
 import IftaLabel from "primevue/iftalabel";
 import Button from "primevue/button";
 import api from "@/axios.js";
-import Toast from "primevue/toast";
 import ModalLoading from "@/components/ModalLoading.vue";
 
 const emits = defineEmits(['recarregar-colaboradores']);
@@ -122,8 +121,6 @@ defineExpose({ openDialog, closeDialog });
 </script>
 
 <template>
-    <Toast />
-
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
     <Dialog header="Adicionar Colaborador" v-model:visible="dialogVisible">

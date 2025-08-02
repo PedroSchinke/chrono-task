@@ -6,7 +6,6 @@ import Button from "primevue/button";
 import Column from "primevue/column";
 import AdicionarColaborador from "@/pages/home/components/AdicionarColaborador.vue";
 import api from "@/axios.js";
-import Toast from "primevue/toast";
 
 const colaboradores = ref([]);
 
@@ -22,7 +21,7 @@ const getColaboradores = async () => {
     try {
         const resp = await api.get('/colaboradores');
 
-        colaboradores.value = resp.data.data;
+        colaboradores.value = resp.data.data.data;
     } catch (e) {
         loading.value = false;
 
@@ -44,8 +43,6 @@ onMounted(() => {
 </script>
 
 <template>
-    <Toast />
-
     <AdicionarColaborador ref="dialogAdicionarColaborador" />
 
     <main>

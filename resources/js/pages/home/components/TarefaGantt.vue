@@ -8,7 +8,6 @@ import dayjs from "dayjs";
 import Popover from 'primevue/popover';
 import Button from 'primevue/button';
 import ColorPicker from 'primevue/colorpicker';
-import Toast from "primevue/toast";
 import api from "@/axios.js";
 import ModalLoading from "@/components/ModalLoading.vue";
 import DatePicker from "primevue/datepicker";
@@ -354,8 +353,6 @@ const resetarDados = () => {
 </script>
 
 <template>
-    <Toast />
-
     <ModalLoading :is-loading="loading" message="Salvando alterações..." />
 
     <div

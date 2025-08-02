@@ -1,5 +1,4 @@
 <script setup>
-import Toast from "primevue/toast";
 import TarefaGantt from "@/pages/home/components/TarefaGantt.vue";
 
 const props = defineProps(['maquina', 'dias', 'larguraDiaPx', 'alturaTarefaPx', 'horasExibidas', 'horariosDisponiveis']);
@@ -15,8 +14,6 @@ const recarregar = () => {
 </script>
 
 <template>
-    <Toast />
-
     <div
         class="gantt-row"
         :id="`linha-maquina-${maquina.id}`"

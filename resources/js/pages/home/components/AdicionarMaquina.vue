@@ -4,7 +4,6 @@ import { useToast } from 'primevue/usetoast';
 import api from '@/axios';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import Toast from 'primevue/toast';
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import MultiSelect from 'primevue/multiselect';
@@ -135,8 +134,6 @@ defineExpose({ openDialog, closeDialog });
 </script>
 
 <template>
-    <Toast />
-
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
     <Dialog header="Adicionar Máquina" v-model:visible="dialogVisible">
