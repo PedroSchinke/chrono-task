@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Colaborador;
-use App\Models\HorarioDisponivel;
 use App\Models\Maquina;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ColaboradoresController extends Controller
+class ColaboradorController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -18,11 +17,9 @@ class ColaboradoresController extends Controller
      */
     public function index(Request $request)
     {
-        $colaboradores = ColaboradoresController::with('tarefas')->get();
+        $colaboradores = Colaborador::with('tarefas')->get();
 
-        return response()->json([
-            'data' => $colaboradores,
-        ]);
+        return response()->json(['data' => $colaboradores]);
     }
 
     /**
@@ -41,11 +38,17 @@ class ColaboradoresController extends Controller
         $request->validate([
             'primeiro_nome' => 'required|string',
             'sobrenome' => 'required|string',
-            'cpf' => 'required|string|unique:colaboradores',
+            'cpf' => 'required|integer|unique:colaboradores',
             'email' => 'required|string|email|unique:colaboradores',
         ]);
 
-        Colaborador::create($request->all());
+        Colaborador::create([
+            'primeiro_nome' => $request->get('primeiro_nome'),
+            'sobrenome' => $request->get('sobrenome'),
+            'nome_completo' => $request->get('primeiro_nome') . ' ' . $request->get('sobrenome'),
+            'cpf' => $request->get('cpf'),
+            'email' => $request->get('email')
+        ]);
 
         return response()->json(['message' => 'Colaborador adicionado com sucesso!'], 201);
     }
