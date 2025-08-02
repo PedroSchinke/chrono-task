@@ -15,11 +15,13 @@ import DatePicker from 'primevue/datepicker';
 import ColorPicker from "primevue/colorpicker";
 import Button from "primevue/button";
 import ModalLoading from "@/components/ModalLoading.vue";
+import SelectColaboradores from "@/pages/home/components/SelectColaboradores.vue";
 
 dayjs.extend(customParseFormat);
 
 const emits = defineEmits(['recarregar-tarefas']);
 
+const colaboradoresSelecionados = ref([]);
 const maquinas = ref([]);
 
 const dialogVisible = ref(false);
@@ -37,6 +39,8 @@ const form = reactive({
 const loading = ref(false);
 const loadingMessage = ref('Adicionando Tarefa...');
 const loadingMaquinas = ref(false);
+
+const selectColaboradores = ref(null);
 
 const toast = useToast();
 
@@ -129,6 +133,27 @@ const getMaquinas = async ({ query = '' }) => {
     }
 }
 
+const adicionarColaboradores = ({ values }) => {
+    values.forEach((value) => {
+        const colaboradorJaSelecionado = colaboradoresSelecionados.value.some((colaborador) => {
+            return colaborador.id === value.id;
+        });
+
+        if (colaboradorJaSelecionado) {
+            toast.add({
+                summary: 'Atenção',
+                detail: `${value.nome_completo} já está selecionado`,
+                severity: 'warn',
+                life: 3000
+            });
+        }
+    })
+}
+
+const openSelectColaboradores = () => {
+    selectColaboradores.value.openDialog();
+}
+
 const validaCampos = () => {
     const camposPreenchidos = form.titulo &&
                               form.descricao &&
@@ -171,9 +196,9 @@ defineExpose({ openDialog, closeDialog });
 </script>
 
 <template>
-    <Toast />
-
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
+
+    <SelectColaboradores ref="selectColaboradores" @on-select="adicionarColaboradores()" />
 
     <Dialog header="Adicionar Tarefa" v-model:visible="dialogVisible">
         <Form v-slot="$form" :initial-values="form" :resolver class="dialog-content" @submit="adicionarTarefa">
@@ -233,6 +258,18 @@ defineExpose({ openDialog, closeDialog });
                 </Message>
             </IftaLabel>
 
+            <div class="colaboradores-container">
+                <h3 style="color: #ccc;">Colaboradores:</h3>
+
+                <Button
+                    label="Adicionar"
+                    icon="pi pi-plus"
+                    variant="outlined"
+                    rounded
+                    @click="openSelectColaboradores()"
+                />
+            </div>
+
             <IftaLabel>
                 <label for="maquina">Máquina</label>
 
@@ -290,6 +327,12 @@ defineExpose({ openDialog, closeDialog });
 
 .label {
     color: #c8c8c8;
+}
+
+.colaboradores-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .cor-input-container {
