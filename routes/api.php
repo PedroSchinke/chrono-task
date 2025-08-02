@@ -1,10 +1,9 @@
 <?php
 
-use App\Http\Controllers\ColaboradoresController;
+use App\Http\Controllers\ColaboradorController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MaquinaController;
 use App\Http\Controllers\TarefaController;
-use App\Http\Controllers\HorarioDisponivelController;
 
 /**
  * Máquinas
@@ -23,10 +22,5 @@ Route::post('/tarefa/{tarefa_id}/reposicionar', [TarefaController::class, 'repos
 /**
  * Colaboradores
  */
-Route::get('/colaboradores', [ColaboradoresController::class, 'index']);
-Route::post('/colaboradores', [ColaboradoresController::class, 'store']);
-
-/**
- * Horários Disponíveis
- */
-Route::get('/horarios-disponiveis', [HorarioDisponivelController::class, 'index']);
+Route::get('/colaboradores', [ColaboradorController::class, 'index']);
+Route::post('/colaboradores', [ColaboradorController::class, 'store']);
