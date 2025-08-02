@@ -1,11 +1,14 @@
 <script setup>
 import { reactive, ref, watch } from "vue";
 import { useToast } from 'primevue/usetoast';
+import { Form } from "@primevue/forms";
 import api from '@/axios';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import Toast from 'primevue/toast';
 import Dialog from "primevue/dialog";
+import IftaLabel from "primevue/iftalabel";
+import Message from "primevue/message";
 import InputText from "primevue/inputtext";
 import AutoComplete from 'primevue/autocomplete';
 import DatePicker from 'primevue/datepicker';
@@ -24,10 +27,10 @@ const dialogVisible = ref(false);
 const form = reactive({
     titulo: '',
     descricao: '',
-    datas: [],
-    periodo_diario_inicio: dayjs('08:00', 'HH:mm').toDate(),
-    periodo_diario_fim: dayjs('18:00', 'HH:mm').toDate(),
-    maquina: {},
+    inicio: new Date(),
+    fim: new Date(),
+    colaboradores: [],
+    maquinas: [],
     cor: 'ff0000'
 });
 
@@ -36,6 +39,30 @@ const loadingMessage = ref('Adicionando Tarefa...');
 const loadingMaquinas = ref(false);
 
 const toast = useToast();
+
+const resolver = ({ values }) => {
+    const errors = {};
+
+    if (!values.titulo) {
+        errors.titulo = [{ message: 'Título é obrigatório.' }];
+    }
+
+    if (!values.inicio) {
+        errors.inicio = [{ message: 'Início é obrigatório.' }];
+    }
+
+    if (!values.fim) {
+        errors.fim = [{ message: 'Fim é obrigatório.' }];
+    }
+
+    if (!values.email) {
+        errors.email = [{ message: 'Email é obrigatório.' }];
+    } else if (!isValidEmail(values.email)) {
+        errors.email = [{ message: 'Insira um email válido.' }];
+    }
+
+    return { values, errors };
+}
 
 const adicionarTarefa = async () => {
     try {
@@ -149,67 +176,79 @@ defineExpose({ openDialog, closeDialog });
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
     <Dialog header="Adicionar Tarefa" v-model:visible="dialogVisible">
-        <form class="dialog-content">
-            <InputText placeholder="Título" v-model="form.titulo"/>
+        <Form v-slot="$form" :initial-values="form" :resolver class="dialog-content" @submit="adicionarTarefa">
+            <IftaLabel>
+                <label for="titulo">Título</label>
+                <InputText id="titulo" name="titulo" v-model="form.titulo" fluid />
 
-            <InputText placeholder="Descrição" v-model="form.descricao"/>
+                <Message v-if="$form.titulo?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                    {{ $form.titulo.error?.message }}
+                </Message>
+            </IftaLabel>
 
-            <DatePicker
-                placeholder="Período da tarefa"
-                v-model="form.datas"
-                :manualInput="false"
-                :min-date="new Date()"
-                date-format="dd/mm/yy"
-                show-icon
-                selectionMode="range"
-                show-button-bar
-                show-time
-                :step-minute="30"
-                @clear-click="form.datas = []"
-            />
+            <IftaLabel>
+                <label for="descricao">Descrição</label>
+                <InputText id="descricao" name="descricao" v-model="form.descricao" fluid />
+            </IftaLabel>
 
-            <span class="label">Período de atividade diário</span>
+            <IftaLabel>
+                <label for="inicio">Início</label>
 
-            <div class="hora-inputs-container">
-                <div class="hora-input">
-                    <label class="label" for="periodo-atividade-inicio-input">Das</label>
+                <DatePicker
+                    v-model="form.inicio"
+                    :manualInput="false"
+                    :min-date="new Date()"
+                    input-id="titulo"
+                    date-format="dd/mm/yy"
+                    show-icon
+                    show-button-bar
+                    show-time
+                    :step-minute="5"
+                    @clear-click="form.inicio = new Date()"
+                />
 
-                    <DatePicker
-                        v-model="form.periodo_diario_inicio"
-                        input-id="periodo-atividade-inicio-input"
-                        time-only
-                        fluid
-                        :step-minute="5"
-                        style="width: 70px;"
-                    />
-                </div>
+                <Message v-if="$form.inicio?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                    {{ $form.inicio.error?.message }}
+                </Message>
+            </IftaLabel>
 
-                <div class="hora-input">
-                    <label class="label" for="periodo-atividade-fim-input">Até</label>
+            <IftaLabel>
+                <label for="fim">Fim</label>
 
-                    <DatePicker
-                        v-model="form.periodo_diario_fim"
-                        input-id="periodo-atividade-fim-input"
-                        time-only
-                        fluid
-                        :step-minute="5"
-                        style="width: 70px;"
-                    />
-                </div>
-            </div>
+                <DatePicker
+                    v-model="form.fim"
+                    :manualInput="false"
+                    :min-date="new Date()"
+                    input-id="fim"
+                    date-format="dd/mm/yy"
+                    show-icon
+                    show-button-bar
+                    show-time
+                    :step-minute="5"
+                    @clear-click="form.fim = new Date()"
+                />
 
-            <AutoComplete
-                placeholder="Máquina"
-                v-model="form.maquina"
-                :loading="loadingMaquinas"
-                :suggestions="maquinas"
-                :disabled="form.datas.length < 2 || !form.periodo_diario_inicio || !form.periodo_diario_fim"
-                empty-search-message="Não existem máquinas disponíveis para o período escolhido."
-                option-label="nome"
-                dropdown
-                force-selection
-                @complete="getMaquinas($event)"
-            />
+                <Message v-if="$form.fim?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                    {{ $form.fim.error?.message }}
+                </Message>
+            </IftaLabel>
+
+            <IftaLabel>
+                <label for="maquina">Máquina</label>
+
+                <AutoComplete
+                    v-model="form.maquina"
+                    :loading="loadingMaquinas"
+                    :suggestions="maquinas"
+                    :disabled="form.datas.length < 2"
+                    input-id="maquina"
+                    empty-search-message="Não existem máquinas disponíveis para o período escolhido."
+                    option-label="nome"
+                    dropdown
+                    force-selection
+                    @complete="getMaquinas($event)"
+                />
+            </IftaLabel>
 
             <div class="cor-input-container">
                 <label class="label" for="cor-input">Cor</label>
@@ -218,7 +257,7 @@ defineExpose({ openDialog, closeDialog });
             </div>
 
             <Button label="Salvar" icon="pi pi-check" @click="adicionarTarefa()" />
-        </form>
+        </Form>
     </Dialog>
 </template>
 
