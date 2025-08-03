@@ -5,24 +5,26 @@ import { Form } from "@primevue/forms";
 import api from '@/axios';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import Toast from 'primevue/toast';
 import Dialog from "primevue/dialog";
 import IftaLabel from "primevue/iftalabel";
-import Message from "primevue/message";
 import InputText from "primevue/inputtext";
-import AutoComplete from 'primevue/autocomplete';
-import DatePicker from 'primevue/datepicker';
+import Message from "primevue/message";
 import ColorPicker from "primevue/colorpicker";
+import Textarea from "primevue/textarea";
+import DatePicker from 'primevue/datepicker';
+import Fieldset from "primevue/fieldset";
+import Chip from "primevue/chip";
 import Button from "primevue/button";
 import ModalLoading from "@/components/ModalLoading.vue";
 import SelectColaboradores from "@/pages/home/components/SelectColaboradores.vue";
+import SelectMaquinas from "@/pages/home/components/SelectMaquinas.vue";
 
 dayjs.extend(customParseFormat);
 
 const emits = defineEmits(['recarregar-tarefas']);
 
 const colaboradoresSelecionados = ref([]);
-const maquinas = ref([]);
+const maquinasSelecionadas = ref([]);
 
 const dialogVisible = ref(false);
 
@@ -30,7 +32,7 @@ const form = reactive({
     titulo: '',
     descricao: '',
     inicio: new Date(),
-    fim: new Date(),
+    fim: new Date(dayjs().add(1, 'day')),
     colaboradores: [],
     maquinas: [],
     cor: 'ff0000'
@@ -41,6 +43,7 @@ const loadingMessage = ref('Adicionando Tarefa...');
 const loadingMaquinas = ref(false);
 
 const selectColaboradores = ref(null);
+const selectMaquinas = ref(null);
 
 const toast = useToast();
 
@@ -57,12 +60,6 @@ const resolver = ({ values }) => {
 
     if (!values.fim) {
         errors.fim = [{ message: 'Fim é obrigatório.' }];
-    }
-
-    if (!values.email) {
-        errors.email = [{ message: 'Email é obrigatório.' }];
-    } else if (!isValidEmail(values.email)) {
-        errors.email = [{ message: 'Insira um email válido.' }];
     }
 
     return { values, errors };
@@ -82,16 +79,15 @@ const adicionarTarefa = async () => {
     const params = {
         titulo: form.titulo,
         descricao: form.descricao,
-        inicio: form.datas[0],
-        fim: form.datas[1],
-        periodo_diario_inicio: dayjs(form.periodo_diario_inicio).toISOString(),
-        periodo_diario_fim: dayjs(form.periodo_diario_fim).toISOString(),
-        id_maquina: form.maquina.id,
+        inicio: form.inicio,
+        fim: form.fim,
+        colaboradores: form.colaboradores,
+        maquinas: form.maquinas,
         cor: '#' + form.cor
     }
 
     try {
-        const resp = await api.post('/tarefa', params);
+        await api.post('/tarefa', params);
     } catch (e) {
         loading.value = false;
 
@@ -135,7 +131,7 @@ const getMaquinas = async ({ query = '' }) => {
 
 const adicionarColaboradores = ({ values }) => {
     values.forEach((value) => {
-        const colaboradorJaSelecionado = colaboradoresSelecionados.value.some((colaborador) => {
+        const colaboradorJaSelecionado = form.colaboradores.some((colaborador) => {
             return colaborador.id === value.id;
         });
 
@@ -146,12 +142,61 @@ const adicionarColaboradores = ({ values }) => {
                 severity: 'warn',
                 life: 3000
             });
+
+            return;
         }
-    })
+
+        form.colaboradores.push(value);
+    });
+}
+
+const adicionarMaquinas = ({ values }) => {
+    values.forEach((value) => {
+        const maquinaJaSelecionada = form.maquinas.some((maquina) => {
+            return maquina.id === value.id;
+        });
+
+        if (maquinaJaSelecionada) {
+            toast.add({
+                summary: 'Atenção',
+                detail: `${value.nome} já está selecionado(a)`,
+                severity: 'warn',
+                life: 3000
+            });
+
+            return;
+        }
+
+        form.maquinas.push(value);
+    });
+}
+
+const removerColaborador = (colaborador) => {
+    form.colaboradores = form.colaboradores.filter((el) => {
+        return el.id !== colaborador.id;
+    });
+}
+
+const removerMaquina = (maquina) => {
+    form.maquinas = form.maquinas.filter((el) => {
+        return el.id !== maquina.id;
+    });
+}
+
+const limparColaboradoresSelecionados = () => {
+    form.colaboradores = [];
+}
+
+const limparMaquinasSelecionadas = () => {
+    form.maquinas = [];
 }
 
 const openSelectColaboradores = () => {
     selectColaboradores.value.openDialog();
+}
+
+const openSelectMaquinas = () => {
+    selectMaquinas.value.openDialog();
 }
 
 const validaCampos = () => {
@@ -198,102 +243,168 @@ defineExpose({ openDialog, closeDialog });
 <template>
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
-    <SelectColaboradores ref="selectColaboradores" @on-select="adicionarColaboradores()" />
+    <SelectColaboradores ref="selectColaboradores" @on-select="(colaboradores) => adicionarColaboradores(colaboradores)" />
 
-    <Dialog header="Adicionar Tarefa" v-model:visible="dialogVisible">
+    <SelectMaquinas ref="selectMaquinas" @on-select="(maquinas) => adicionarMaquinas(maquinas)" />
+
+    <Dialog header="Adicionar Tarefa" :style="{ width: '60%' }" v-model:visible="dialogVisible">
         <Form v-slot="$form" :initial-values="form" :resolver class="dialog-content" @submit="adicionarTarefa">
-            <IftaLabel>
-                <label for="titulo">Título</label>
-                <InputText id="titulo" name="titulo" v-model="form.titulo" fluid />
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <IftaLabel style="width: 100%;">
+                        <label for="titulo">Título</label>
+                        <InputText id="titulo" name="titulo" v-model="form.titulo" fluid />
+
+                    </IftaLabel>
+
+                    <ColorPicker v-model="form.cor" title="Selecionar Cor" input-id="cor-input" format="hex" />
+                </div>
 
                 <Message v-if="$form.titulo?.invalid" severity="error" size="small" variant="simple" class="input-message">
                     {{ $form.titulo.error?.message }}
                 </Message>
-            </IftaLabel>
-
-            <IftaLabel>
-                <label for="descricao">Descrição</label>
-                <InputText id="descricao" name="descricao" v-model="form.descricao" fluid />
-            </IftaLabel>
-
-            <IftaLabel>
-                <label for="inicio">Início</label>
-
-                <DatePicker
-                    v-model="form.inicio"
-                    :manualInput="false"
-                    :min-date="new Date()"
-                    input-id="titulo"
-                    date-format="dd/mm/yy"
-                    show-icon
-                    show-button-bar
-                    show-time
-                    :step-minute="5"
-                    @clear-click="form.inicio = new Date()"
-                />
-
-                <Message v-if="$form.inicio?.invalid" severity="error" size="small" variant="simple" class="input-message">
-                    {{ $form.inicio.error?.message }}
-                </Message>
-            </IftaLabel>
-
-            <IftaLabel>
-                <label for="fim">Fim</label>
-
-                <DatePicker
-                    v-model="form.fim"
-                    :manualInput="false"
-                    :min-date="new Date()"
-                    input-id="fim"
-                    date-format="dd/mm/yy"
-                    show-icon
-                    show-button-bar
-                    show-time
-                    :step-minute="5"
-                    @clear-click="form.fim = new Date()"
-                />
-
-                <Message v-if="$form.fim?.invalid" severity="error" size="small" variant="simple" class="input-message">
-                    {{ $form.fim.error?.message }}
-                </Message>
-            </IftaLabel>
-
-            <div class="colaboradores-container">
-                <h3 style="color: #ccc;">Colaboradores:</h3>
-
-                <Button
-                    label="Adicionar"
-                    icon="pi pi-plus"
-                    variant="outlined"
-                    rounded
-                    @click="openSelectColaboradores()"
-                />
             </div>
 
             <IftaLabel>
-                <label for="maquina">Máquina</label>
+                <label for="descricao">Descrição (máx. 500)</label>
 
-                <AutoComplete
-                    v-model="form.maquina"
-                    :loading="loadingMaquinas"
-                    :suggestions="maquinas"
-                    :disabled="form.datas.length < 2"
-                    input-id="maquina"
-                    empty-search-message="Não existem máquinas disponíveis para o período escolhido."
-                    option-label="nome"
-                    dropdown
-                    force-selection
-                    @complete="getMaquinas($event)"
+                <Textarea
+                    v-model="form.descricao"
+                    id="descricao"
+                    name="descricao"
+                    style="resize: none;"
+                    fluid
+                    :auto-resize="true"
+                    :maxlength="500"
                 />
             </IftaLabel>
 
-            <div class="cor-input-container">
-                <label class="label" for="cor-input">Cor</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <IftaLabel>
+                    <label for="inicio">Início</label>
 
-                <ColorPicker v-model="form.cor" input-id="cor-input" format="hex" />
+                    <DatePicker
+                        v-model="form.inicio"
+                        :manualInput="false"
+                        input-id="titulo"
+                        date-format="dd/mm/yy"
+                        show-icon
+                        show-button-bar
+                        show-time
+                        :step-minute="5"
+                        @clear-click="form.inicio = new Date()"
+                    />
+
+                    <Message v-if="$form.inicio?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                        {{ $form.inicio.error?.message }}
+                    </Message>
+                </IftaLabel>
+
+                <IftaLabel>
+                    <label for="fim">Fim</label>
+
+                    <DatePicker
+                        v-model="form.fim"
+                        :manualInput="false"
+                        :min-date="form.inicio"
+                        input-id="fim"
+                        date-format="dd/mm/yy"
+                        show-icon
+                        show-button-bar
+                        show-time
+                        :step-minute="5"
+                        @clear-click="form.fim = new Date()"
+                    />
+
+                    <Message v-if="$form.fim?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                        {{ $form.fim.error?.message }}
+                    </Message>
+                </IftaLabel>
             </div>
 
-            <Button label="Salvar" icon="pi pi-check" @click="adicionarTarefa()" />
+            <Fieldset style="margin-top: -15px;">
+                <template #legend style="display: flex;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h4 style="margin: 0; color: #ccc;">Colaboradores Responsáveis</h4>
+
+                        <Button
+                            title="Adicionar Colaborador"
+                            icon="pi pi-plus"
+                            variant="text"
+                            size="small"
+                            rounded
+                            @click="openSelectColaboradores()"
+                        />
+                    </div>
+                </template>
+
+                <div class="chips-container">
+                    <Chip
+                        v-for="colaborador of form.colaboradores"
+                        :key="colaborador.id"
+                        removable
+                        @remove="removerColaborador(colaborador)"
+                    >
+                        {{ colaborador.nome_completo }}
+                    </Chip>
+
+                    <p v-if="form.colaboradores.length === 0" style="margin: 0; font-style: italic;">
+                        Nenhum colaborador selecionado
+                    </p>
+
+                    <Button
+                        v-else
+                        label="Limpar"
+                        icon="pi pi-trash"
+                        variant="text"
+                        rounded
+                        @click="limparColaboradoresSelecionados()"
+                    />
+                </div>
+            </Fieldset>
+
+            <Fieldset style="margin-top: -10px;">
+                <template #legend style="display: flex;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h4 style="margin: 0; color: #ccc;">Máquinas Utilizadas</h4>
+
+                        <Button
+                            title="Adicionar Máquina"
+                            icon="pi pi-plus"
+                            variant="text"
+                            size="small"
+                            rounded
+                            @click="openSelectMaquinas()"
+                        />
+                    </div>
+                </template>
+
+                <div class="chips-container">
+                    <Chip
+                        v-for="maquina of form.maquinas"
+                        :key="maquina.id"
+                        removable
+                        @remove="removerMaquina(maquina)"
+                    >
+                        {{ maquina.nome }}
+                    </Chip>
+
+                    <p v-if="form.maquinas.length === 0" style="margin: 0; font-style: italic;">
+                        Nenhuma máquina selecionada
+                    </p>
+
+                    <Button
+                        v-else
+                        label="Limpar"
+                        icon="pi pi-trash"
+                        variant="text"
+                        rounded
+                        @click="limparMaquinasSelecionadas()"
+                    />
+                </div>
+            </Fieldset>
+
+            <Button label="Salvar" icon="pi pi-check" style="margin-top: 10px;" @click="adicionarTarefa()" />
         </Form>
     </Dialog>
 </template>
@@ -305,38 +416,20 @@ defineExpose({ openDialog, closeDialog });
     gap: 10px;
 }
 
-.dias-selecionados-container {
-    max-width: 310px;
+.input-message {
+    margin-top: 3px;
 }
 
-.dia-selecionado-container {
+.chips-container {
     display: flex;
+    justify-content: flex-start;
     align-items: center;
-}
-
-.hora-inputs-container {
-    display: flex;
     gap: 10px;
-}
-
-.hora-input {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.label {
-    color: #c8c8c8;
-}
-
-.colaboradores-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 .cor-input-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 5px;
 }
