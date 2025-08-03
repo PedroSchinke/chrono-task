@@ -17,16 +17,9 @@ class MaquinaController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $maquinas = Maquina::query();
+        $query = Maquina::query();
 
-        if ($request->filled('nome')) {
-            $maquinas->where('nome', 'like', '%' . $request->input('nome') . '%');
-        }
-
-        $temFiltroDeData = $request->filled('data_inicio') &&
-            $request->filled('data_fim') &&
-            $request->filled('periodo_diario_inicio') &&
-            $request->filled('periodo_diario_fim');
+        $temFiltroDeData = $request->filled('data_inicio') && $request->filled('data_fim');
 
         if ($temFiltroDeData) {
             $dataInicio = DateHelper::formatarData($request->input('data_inicio'));
@@ -38,14 +31,38 @@ class MaquinaController extends Controller
 
             $quantidadeDias = count($diasSemana);
 
-            $maquinas->whereHas('horariosDisponiveis', function ($query) use ($diasSemana, $horaInicio, $horaFim) {
-                $query->whereIn('dia_semana', $diasSemana)
-                      ->whereTime('hora_inicio', '<=', $horaInicio)
-                      ->whereTime('hora_fim', '>=', $horaFim);
+            $maquinas->whereHas('tarefas', function ($query) use ($horaInicio, $horaFim) {
+                $query->whereTime('inicio', '<=', $horaInicio)
+                      ->whereTime('fim', '>=', $horaFim);
             }, '=', $quantidadeDias);
         } else {
             $maquinas->with(['horariosDisponiveis', 'tarefas']);
         }
+
+        if (!empty($request->get('id'))) {
+            $query->where('id', $request->get('id'));
+        }
+
+        if (!empty($request->get('nome'))) {
+            $query->where('nome', 'like', '%' . $request->get('nome') . '%');
+        }
+
+        if (!empty($request->get('descricao'))) {
+            $query->where('descricao', 'like', '%' . $request->get('descricao') . '%');
+        }
+
+        $sortField = 'nome';
+        $sortOrder = 'asc';
+
+        if (!empty($request->get('sort_field'))) {
+            $sortField = $request->get('sort_field');
+        }
+
+        if (!empty($request->get('sort_order'))) {
+            $sortOrder = $request->get('sort_order');
+        }
+
+        $query->orderBy($sortField, $sortOrder);
 
         return response()->json([
             'data' => $maquinas->get(),
