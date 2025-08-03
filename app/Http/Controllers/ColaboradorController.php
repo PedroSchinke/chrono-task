@@ -23,8 +23,8 @@ class ColaboradorController extends Controller
             $query->where('id', $request->get('id'));
         }
 
-        if (!empty($request->get('nome'))) {
-            $query->where('nome_completo', 'like', '%' . $request->get('nome') . '%');
+        if (!empty($request->get('nome_completo'))) {
+            $query->where('nome_completo', 'like', '%' . $request->get('nome_completo') . '%');
         }
 
         if (!empty($request->get('cpf'))) {
