@@ -15,13 +15,16 @@ class Tarefa extends Model
         'inicio',
         'fim',
         'cor',
-        'periodo_diario_inicio',
-        'periodo_diario_fim'
     ];
     public $timestamps = false;
 
-    public function maquina()
+    public function colaboradores()
     {
-        return $this->belongsTo(Maquina::class, 'id_maquina', 'id');
+        return $this->belongsTo(Colaborador::class);
+    }
+
+    public function maquinas()
+    {
+        return $this->belongsTo(Maquina::class);
     }
 }
