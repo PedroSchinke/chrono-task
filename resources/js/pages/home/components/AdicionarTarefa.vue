@@ -23,9 +23,6 @@ dayjs.extend(customParseFormat);
 
 const emits = defineEmits(['recarregar-tarefas']);
 
-const colaboradoresSelecionados = ref([]);
-const maquinasSelecionadas = ref([]);
-
 const dialogVisible = ref(false);
 
 const form = reactive({
@@ -40,7 +37,6 @@ const form = reactive({
 
 const loading = ref(false);
 const loadingMessage = ref('Adicionando Tarefa...');
-const loadingMaquinas = ref(false);
 
 const selectColaboradores = ref(null);
 const selectMaquinas = ref(null);
@@ -65,11 +61,9 @@ const resolver = ({ values }) => {
     return { values, errors };
 }
 
-const adicionarTarefa = async () => {
-    try {
-        validaCampos();
-    } catch (e) {
-        toast.add({ severity: 'error', summary: 'Alerta', detail: e.message, life: 3000 });
+const adicionarTarefa = async ({ valid }) => {
+    if (!valid) {
+        toast.add({ summary: 'Atenção', detail: 'Preencha todos os campos.', severity: 'error', life: 3000 });
 
         return;
     }
@@ -103,30 +97,6 @@ const adicionarTarefa = async () => {
     emits('recarregar-tarefas');
 
     closeDialog();
-}
-
-const getMaquinas = async ({ query = '' }) => {
-    loadingMaquinas.value = true;
-
-    const params = new URLSearchParams({
-        nome: query,
-        data_inicio: form.datas[0].toISOString(),
-        data_fim: form.datas[1].toISOString(),
-        periodo_diario_inicio: dayjs(form.periodo_diario_inicio).toISOString(),
-        periodo_diario_fim: dayjs(form.periodo_diario_fim).toISOString()
-    });
-
-    try {
-        const resp = await api.get(`/maquinas?${params.toString()}`);
-
-        maquinas.value = resp.data.data;
-
-        loadingMaquinas.value = false;
-    } catch (e) {
-        loadingMaquinas.value = false;
-
-        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível pesquisar máquinas', life: 3000 });
-    }
 }
 
 const adicionarColaboradores = ({ values }) => {
@@ -197,20 +167,6 @@ const openSelectColaboradores = () => {
 
 const openSelectMaquinas = () => {
     selectMaquinas.value.openDialog();
-}
-
-const validaCampos = () => {
-    const camposPreenchidos = form.titulo &&
-                              form.descricao &&
-                              form.datas &&
-                              form.periodo_diario_inicio &&
-                              form.periodo_diario_fim &&
-                              form.maquina &&
-                              form.cor;
-
-    if (!camposPreenchidos) {
-        throw new Error('Preencha todos os campos para criar uma tarefa');
-    }
 }
 
 const limparCampos = () => {
@@ -306,7 +262,7 @@ defineExpose({ openDialog, closeDialog });
                     <DatePicker
                         v-model="form.fim"
                         :manualInput="false"
-                        :min-date="form.inicio"
+                        :min-date="new Date(dayjs(form.inicio).add(5, 'minute'))"
                         input-id="fim"
                         date-format="dd/mm/yy"
                         show-icon
@@ -404,7 +360,7 @@ defineExpose({ openDialog, closeDialog });
                 </div>
             </Fieldset>
 
-            <Button label="Salvar" icon="pi pi-check" style="margin-top: 10px;" @click="adicionarTarefa()" />
+            <Button label="Salvar" icon="pi pi-check" type="submit" style="margin-top: 10px;" />
         </Form>
     </Dialog>
 </template>
@@ -425,12 +381,5 @@ defineExpose({ openDialog, closeDialog });
     justify-content: flex-start;
     align-items: center;
     gap: 10px;
-}
-
-.cor-input-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
 }
 </style>
