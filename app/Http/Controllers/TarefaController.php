@@ -4,20 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Helpers\DateHelper;
-use App\Http\Services\HorarioDisponivelService;
-use App\Models\HorarioDisponivel;
+use App\Http\Services\TarefaService;
+use App\Models\Colaborador;
+use App\Models\ColaboradorTarefa;
 use App\Models\Maquina;
 use App\Models\Tarefa;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 
 class TarefaController extends Controller
 {
-    private HorarioDisponivelService $horariosService;
+    private TarefaService $tarefaService;
 
     public function __construct()
     {
-        $this->horariosService = new HorarioDisponivelService();
+        $this->tarefaService = new TarefaService();
     }
 
     /**
@@ -46,29 +48,34 @@ class TarefaController extends Controller
     {
         $request->validate([
             'titulo' => 'required|string',
-            'descricao' => 'required|string',
-            'id_maquina' => 'required|integer',
-            'inicio' => 'required|string',
-            'fim' => 'required|string',
+            'inicio' => 'required|date',
+            'fim' => 'required|date',
             'cor' => 'required|string',
-            'periodo_diario_inicio' => 'required|string',
-            'periodo_diario_fim' => 'required|string',
         ]);
 
-        $horaInicio = DateHelper::formatarData($request->get('periodo_diario_inicio'), 'H:i');
-        $horaFim = DateHelper::formatarData($request->get('periodo_diario_fim'), 'H:i');
-        $diasDaSemana = DateHelper::getDiasDaSemana($request->get('inicio'), $request->get('fim'));
+        $inicio = Carbon::parse($request->get('inicio'));
+        $fim = Carbon::parse($request->get('fim'));
 
-        foreach ($diasDaSemana as $dia) {
-            $horarioDisponivel = HorarioDisponivel::query()
-                ->where('id_maquina', $request->get('id_maquina'))
-                ->whereTime('hora_inicio', '<=',  $horaInicio)
-                ->whereTime('hora_fim', '>=', $horaFim)
-                ->where('dia_semana', $dia)
-                ->exists();
+        $colaboradores = $request->get('colaboradores', []);
 
-            if (!$horarioDisponivel) {
-                throw new Exception('Horários indisponíveis para o período');
+        if (!empty($colaboradores)) {
+            foreach ($colaboradores as $colaborador) {
+                $colaboradorModel = Colaborador::with('tarefas')->find($colaborador['id']);
+
+                if (!$colaboradorModel) {
+                    return response()->json(['erro' => "Colaborador de ID {$colaborador['id']} não encontrado."], 404);
+                }
+
+                $jaPossuiTarefaNoPeriodo = $colaboradorModel->tarefas()
+                    ->where('inicio', '<', $fim)
+                    ->where('fim', '>', $inicio)
+                    ->exists();
+
+                if ($jaPossuiTarefaNoPeriodo) {
+                    return response()->json([
+                        'erro' => "O colaborador {$colaboradorModel->nome_completo} já possui tarefa no período informado."
+                    ], 422);
+                }
             }
         }
 
@@ -78,18 +85,21 @@ class TarefaController extends Controller
         $tarefa = Tarefa::create([
             'titulo' => $request->get('titulo'),
             'descricao' => $request->get('descricao'),
-            'id_maquina' => $request->get('id_maquina'),
             'inicio' => $inicio,
             'fim' => $fim,
             'cor' => $request->get('cor'),
-            'periodo_diario_inicio' => $horaInicio,
-            'periodo_diario_fim' => $horaFim
         ]);
 
-        return response()->json([
-            'mensagem' => 'Tarefa criada com sucesso!',
-            'tarefa' => $tarefa
-        ], 201);
+        if (!empty($colaboradores)) {
+            foreach ($colaboradores as $colaborador) {
+                ColaboradorTarefa::create([
+                    'colaborador_id' => $colaborador['id'],
+                    'tarefa_id' => $tarefa->id,
+                ]);
+            }
+        }
+
+        return response()->json(['mensagem' => 'Tarefa criada com sucesso!', 'tarefa' => $tarefa], 201);
     }
 
     /**
