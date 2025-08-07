@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useToast } from "primevue/usetoast";
 import { getDates } from "@/helpers/getDates.js";
 import { getDiaSemana } from "@/helpers/getDiaSemana.js";
@@ -20,6 +20,8 @@ const toast = useToast();
 
 const props = defineProps(['maquinas' , 'horariosDisponiveis']);
 const emit = defineEmits(['recarregarMaquinas']);
+
+const tarefas = ref([]);
 
 const adicionarTarefaDialog = ref(null);
 
@@ -70,6 +72,27 @@ const loadingMessage = ref('Carregando...');
 const dias = computed(() => {
     return getDates(dayjs().startOf('day'), dayjs().add(qtdDiasExibidos.value.dias, 'day'));
 });
+
+onMounted(() => {
+    getTarefas();
+});
+
+const getTarefas = async () => {
+    try {
+        const resp = await api.get('/tarefas');
+
+        console.log(resp);
+
+        tarefas.value = resp.data;
+    } catch (e) {
+        toast.add({
+            summary: 'Algo deu errado...',
+            detail: 'Não foi possível carregar tarefas.',
+            severity: 'error',
+            life: 3000
+        });
+    }
+}
 
 const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
     let idMaquina = tarefa.id_maquina;
@@ -181,7 +204,7 @@ const getLeftByIndex = (index) => {
             :style="`grid-template-columns: 200px repeat(${qtdDiasExibidos.dias + 1}, ${larguraDiaPx}px)`"
         >
             <div class="task-label-header">
-                Máquina
+                Tarefa
             </div>
 
             <div v-for="dia in dias" :key="dia" class="day-header">
@@ -209,9 +232,9 @@ const getLeftByIndex = (index) => {
         </div>
 
         <LinhaGantt
-            v-for="maquina in maquinas"
-            :key="maquina.id"
-            :maquina="maquina"
+            v-for="tarefa in tarefas"
+            :key="tarefa.id"
+            :tarefa="tarefa"
             :dias="dias"
             :largura-dia-px="larguraDiaPx"
             :altura-tarefa-px="alturaTarefaPx"

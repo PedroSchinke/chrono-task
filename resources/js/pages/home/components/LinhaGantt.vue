@@ -1,7 +1,7 @@
 <script setup>
 import TarefaGantt from "@/pages/home/components/TarefaGantt.vue";
 
-const props = defineProps(['maquina', 'dias', 'larguraDiaPx', 'alturaTarefaPx', 'horasExibidas', 'horariosDisponiveis']);
+const props = defineProps(['tarefa', 'dias', 'larguraDiaPx', 'alturaTarefaPx', 'horasExibidas', 'horariosDisponiveis']);
 const emit = defineEmits(['reposicionar', 'recarregar']);
 
 const reposicionarTarefa = (data) => {
@@ -16,21 +16,18 @@ const recarregar = () => {
 <template>
     <div
         class="gantt-row"
-        :id="`linha-maquina-${maquina.id}`"
+        :id="`linha-tarefa-${tarefa.id}`"
         :style="`height: ${props.alturaTarefaPx}px; max-height: ${props.alturaTarefaPx}px;`"
     >
-        <div class="task-label">{{ maquina.nome }}</div>
+        <div class="task-label">{{ tarefa.titulo }}</div>
 
         <div class="row-content">
             <TarefaGantt
-                v-for="tarefa in props.maquina.tarefas"
-                :key="tarefa.id"
-                :tarefa="tarefa"
+                :tarefa="props.tarefa"
                 :dias="props.dias"
                 :largura-dia-px="props.larguraDiaPx"
                 :altura-tarefa-px="props.alturaTarefaPx"
                 :horas-exibidas="props.horasExibidas"
-                :maquina="props.maquina"
                 :horarios-disponiveis="props.horariosDisponiveis"
                 @reposicionar="(data) => reposicionarTarefa(data)"
                 @recarregar="recarregar()"
