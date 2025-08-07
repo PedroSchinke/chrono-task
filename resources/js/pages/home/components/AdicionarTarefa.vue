@@ -209,8 +209,8 @@ defineExpose({ openDialog, closeDialog });
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <IftaLabel style="width: 100%;">
                         <label for="titulo">Título</label>
-                        <InputText id="titulo" name="titulo" v-model="form.titulo" fluid />
 
+                        <InputText id="titulo" name="titulo" v-model="form.titulo" fluid />
                     </IftaLabel>
 
                     <ColorPicker v-model="form.cor" title="Selecionar Cor" input-id="cor-input" format="hex" />
