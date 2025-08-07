@@ -8,6 +8,7 @@ use App\Http\Services\TarefaService;
 use App\Models\Colaborador;
 use App\Models\ColaboradorTarefa;
 use App\Models\Maquina;
+use App\Models\MaquinaTarefa;
 use App\Models\Tarefa;
 use Carbon\Carbon;
 use Exception;
@@ -27,7 +28,7 @@ class TarefaController extends Controller
      */
     public function index(Request $request)
     {
-        $tarefas = Tarefa::with(['maquina'])->get();
+        $tarefas = Tarefa::with(['colaboradores', 'maquinas'])->get();
 
         return response()->json($tarefas);
     }
@@ -58,24 +59,43 @@ class TarefaController extends Controller
 
         $colaboradores = $request->get('colaboradores', []);
 
-        if (!empty($colaboradores)) {
-            foreach ($colaboradores as $colaborador) {
-                $colaboradorModel = Colaborador::with('tarefas')->find($colaborador['id']);
+        foreach ($colaboradores as $colaborador) {
+            $colaboradorModel = Colaborador::with('tarefas')->find($colaborador['id']);
 
-                if (!$colaboradorModel) {
-                    return response()->json(['erro' => "Colaborador de ID {$colaborador['id']} não encontrado."], 404);
-                }
+            if (!$colaboradorModel) {
+                return response()->json(['erro' => "Colaborador de ID {$colaborador['id']} não encontrado."], 404);
+            }
 
-                $jaPossuiTarefaNoPeriodo = $colaboradorModel->tarefas()
-                    ->where('inicio', '<', $fim)
-                    ->where('fim', '>', $inicio)
-                    ->exists();
+            $jaPossuiTarefaNoPeriodo = $colaboradorModel->tarefas()
+                ->where('inicio', '<', $fim)
+                ->where('fim', '>', $inicio)
+                ->exists();
 
-                if ($jaPossuiTarefaNoPeriodo) {
-                    return response()->json([
-                        'erro' => "O colaborador {$colaboradorModel->nome_completo} já possui tarefa no período informado."
-                    ], 422);
-                }
+            if ($jaPossuiTarefaNoPeriodo) {
+                return response()->json([
+                    'erro' => "O colaborador {$colaboradorModel->nome_completo} já possui tarefa no período informado."
+                ], 422);
+            }
+        }
+
+        $maquinas = $request->get('maquinas', []);
+
+        foreach ($maquinas as $maquina) {
+            $maquinaModel = Maquina::with('tarefas')->find($maquina['id']);
+
+            if (!$maquinaModel) {
+                return response()->json(['erro' => "Máquina de ID {$maquina['id']} não encontrado."], 404);
+            }
+
+            $jaPossuiTarefaNoPeriodo = $maquinaModel->tarefas()
+                ->where('inicio', '<', $fim)
+                ->where('fim', '>', $inicio)
+                ->exists();
+
+            if ($jaPossuiTarefaNoPeriodo) {
+                return response()->json([
+                    'erro' => "A máquina {$maquinaModel->nome} já possui tarefa no período informado."
+                ], 422);
             }
         }
 
@@ -93,6 +113,15 @@ class TarefaController extends Controller
         if (!empty($colaboradores)) {
             foreach ($colaboradores as $colaborador) {
                 ColaboradorTarefa::create([
+                    'colaborador_id' => $colaborador['id'],
+                    'tarefa_id' => $tarefa->id,
+                ]);
+            }
+        }
+
+        if (!empty($colaboradores)) {
+            foreach ($colaboradores as $colaborador) {
+                MaquinaTarefa::create([
                     'colaborador_id' => $colaborador['id'],
                     'tarefa_id' => $tarefa->id,
                 ]);
