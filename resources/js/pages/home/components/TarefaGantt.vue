@@ -5,14 +5,15 @@ import { getDates } from "@/helpers/getDates.js";
 import { getDiaSemana } from "@/helpers/getDiaSemana.js";
 import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
 import dayjs from "dayjs";
+import api from "@/axios.js";
+import IftaLabel from "primevue/iftalabel";
+import InputText from "primevue/inputtext";
 import Popover from 'primevue/popover';
 import Button from 'primevue/button';
 import ColorPicker from 'primevue/colorpicker';
-import api from "@/axios.js";
-import ModalLoading from "@/components/ModalLoading.vue";
 import DatePicker from "primevue/datepicker";
-import InputText from "primevue/inputtext";
-import AutoComplete from "primevue/autocomplete";
+import Chip from 'primevue/chip';
+import ModalLoading from "@/components/ModalLoading.vue";
 
 const toast = useToast();
 
@@ -33,20 +34,12 @@ const tarefaLocal = computed(() => {
 
 const loading = ref(false);
 
-const maquinas = ref([]);
-const loadingMaquinas = ref(false);
-
 const popoverForm = reactive({
     titulo: props.tarefa.titulo,
     descricao: props.tarefa.descricao,
-    maquina: {
-        id: props.tarefa.id_maquina,
-        nome: props.maquina.nome
-    },
+    maquina: [],
     inicio: new Date(props.tarefa.inicio),
     fim: new Date(props.tarefa.fim),
-    periodo_diario_inicio: props.tarefa.periodo_diario_inicio.slice(0, 5),
-    periodo_diario_fim: props.tarefa.periodo_diario_fim.slice(0, 5),
     cor: props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor
 });
 
@@ -318,22 +311,6 @@ const validarHorarios = () => {
     });
 }
 
-const getMaquinas = async () => {
-    loadingMaquinas.value = true;
-
-    try {
-        const resp = await api.get(`/maquinas`);
-
-        maquinas.value = resp.data.data;
-
-        loadingMaquinas.value = false;
-    } catch (e) {
-        loadingMaquinas.value = false;
-
-        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível pesquisar máquinas', life: 3000 });
-    }
-}
-
 const toggle = (event) => {
     if (!blocoFoiArrastado.value) {
         tarefaPopover.value.toggle(event);
@@ -343,11 +320,9 @@ const toggle = (event) => {
 const resetarDados = () => {
     popoverForm.titulo = tarefaLocal.value.titulo;
     popoverForm.descricao = tarefaLocal.value.descricao;
-    popoverForm.maquina = { id: tarefaLocal.value.id_maquina, nome: props.maquina.nome };
+    popoverForm.maquina = [];
     popoverForm.inicio = new Date(tarefaLocal.value.inicio);
     popoverForm.fim = new Date(tarefaLocal.value.fim);
-    popoverForm.periodo_diario_inicio = tarefaLocal.value.periodo_diario_inicio.slice(0, 5);
-    popoverForm.periodo_diario_fim = tarefaLocal.value.periodo_diario_fim.slice(0, 5);
     popoverForm.cor = tarefaLocal.value.cor.startsWith('#') ? tarefaLocal.value.cor : '#' + tarefaLocal.value.cor;
 }
 </script>
@@ -372,31 +347,17 @@ const resetarDados = () => {
     <Popover ref="tarefaPopover" @hide="resetarDados()" @show="resetarDados()">
         <div class="popover-tarefa-infos">
             <div class="popover-info">
-                <span style="font-weight: bold;">Título</span>
+                <IftaLabel>
+                    <label for="titulo" style="font-weight: bold;">Título</label>
 
-                <InputText placeholder="Título" v-model="popoverForm.titulo"/>
+                    <InputText input-id="titulo" v-model="popoverForm.titulo"/>
+                </IftaLabel>
             </div>
 
             <div class="popover-info">
                 <span style="font-weight: bold;">Descrição</span>
 
                 <InputText placeholder="Descrição" v-model="popoverForm.descricao"/>
-            </div>
-
-            <div class="popover-info">
-                <span style="font-weight: bold;">Máquina</span>
-
-                <AutoComplete
-                    placeholder="Máquina"
-                    v-model="popoverForm.maquina"
-                    :loading="loadingMaquinas"
-                    :suggestions="maquinas"
-                    empty-search-message="Não foram encontradas máquinas"
-                    option-label="nome"
-                    dropdown
-                    force-selection
-                    @complete="getMaquinas($event)"
-                />
             </div>
 
             <div class="popover-info">
@@ -432,29 +393,27 @@ const resetarDados = () => {
             </div>
 
             <div class="popover-info">
-                <span style="font-weight: bold;">Período de atividade diário</span>
+                <span style="font-weight: bold;">Colaboradores</span>
 
-                <div class="hora-inputs-container">
-                    <DatePicker
-                        v-model="popoverForm.periodo_diario_inicio"
-                        input-id="periodo-atividade-inicio-input"
-                        time-only
-                        fluid
-                        :step-minute="5"
-                        style="width: 70px;"
-                    />
+                <Chip v-for="colaborador in tarefaLocal.colaboradores">
+                    {{ colaborador.nome_completo }}
+                </Chip>
 
-                    <label class="label" for="periodo-atividade-fim-input">Até</label>
+                <p v-if="tarefaLocal.colaboradores.length === 0" class="empty-message">
+                    Sem colaboradores
+                </p>
+            </div>
 
-                    <DatePicker
-                        v-model="popoverForm.periodo_diario_fim"
-                        input-id="periodo-atividade-fim-input"
-                        time-only
-                        fluid
-                        :step-minute="5"
-                        style="width: 70px;"
-                    />
-                </div>
+            <div class="popover-info">
+                <span style="font-weight: bold;">Máquinas</span>
+
+                <Chip v-for="maquina in tarefaLocal.maquinas">
+                    {{ maquina.nome }}
+                </Chip>
+
+                <p v-if="tarefaLocal.colaboradores.length === 0" class="empty-message">
+                    Sem máquinas
+                </p>
             </div>
 
             <div class="popover-info">
@@ -528,10 +487,10 @@ const resetarDados = () => {
     gap: 5px;
 }
 
-.hora-inputs-container {
-    display: flex;
-    align-items: center;
-    gap: 5px;
+.empty-message {
+    margin: 3px;
+    color: #bbb;
+    font-style: italic;
 }
 
 .button-container {
