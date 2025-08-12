@@ -4,6 +4,7 @@ import { useToast } from "primevue/usetoast";
 import { getDates } from "@/helpers/getDates.js";
 import { getDiaSemana } from "@/helpers/getDiaSemana.js";
 import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
+import { Form } from '@primevue/forms';
 import dayjs from "dayjs";
 import api from "@/axios.js";
 import IftaLabel from "primevue/iftalabel";
@@ -14,6 +15,7 @@ import ColorPicker from 'primevue/colorpicker';
 import DatePicker from "primevue/datepicker";
 import Chip from 'primevue/chip';
 import ModalLoading from "@/components/ModalLoading.vue";
+import Message from "primevue/message";
 
 const toast = useToast();
 
@@ -104,6 +106,24 @@ const divisions = computed(() => {
 
     return { divisores, divisionPx, divisionHours, divisionMinutes }
 });
+
+const resolver = ({ values }) => {
+    const errors = {};
+
+    if (!values.titulo) {
+        errors.titulo = [{ message: 'Título é obrigatório.' }];
+    }
+
+    if (!values.inicio) {
+        errors.inicio = [{ message: 'Início é obrigatório.' }];
+    }
+
+    if (!values.fim) {
+        errors.fim = [{ message: 'Fim é obrigatório.' }];
+    }
+
+    return { values, errors };
+}
 
 function fracaoDoDia(data) {
     const date = new Date(data);
@@ -345,51 +365,77 @@ const resetarDados = () => {
     </div>
 
     <Popover ref="tarefaPopover" @hide="resetarDados()" @show="resetarDados()">
-        <div class="popover-tarefa-infos">
-            <div class="popover-info">
-                <IftaLabel>
-                    <label for="titulo" style="font-weight: bold;">Título</label>
+        <Form v-slot="$form" :initial-values="popoverForm" :resolver class="popover-tarefa-infos" @submit="salvarAlteracoesTarefa">
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <IftaLabel style="width: 100%;">
+                        <label for="titulo">Título</label>
 
-                    <InputText input-id="titulo" v-model="popoverForm.titulo"/>
+                        <InputText id="titulo" name="titulo" v-model="popoverForm.titulo" fluid />
+                    </IftaLabel>
+
+                    <ColorPicker v-model="popoverForm.cor" title="Selecionar Cor" input-id="cor-input" format="hex" />
+                </div>
+
+                <Message v-if="$form.titulo?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                    {{ $form.titulo.error?.message }}
+                </Message>
+            </div>
+
+            <div class="popover-info">
+                <IftaLabel style="width: 100%;">
+                    <label for="descricao">Descrição</label>
+
+                    <InputText id="descricao" name="descricao" v-model="popoverForm.descricao" fluid />
                 </IftaLabel>
             </div>
 
             <div class="popover-info">
-                <span style="font-weight: bold;">Descrição</span>
+                <IftaLabel style="width: 100%;">
+                    <label for="inicio">Início</label>
 
-                <InputText placeholder="Descrição" v-model="popoverForm.descricao"/>
+                    <DatePicker
+                        placeholder="Início da tarefa"
+                        v-model="popoverForm.inicio"
+                        :manualInput="false"
+                        :step-minute="30"
+                        input-id="inicio"
+                        name="inicio"
+                        date-format="dd/mm/yy"
+                        show-icon
+                        show-button-bar
+                        show-time
+                        @clear-click="popoverForm.inicio = ''"
+                    />
+                </IftaLabel>
+
+                <Message v-if="$form.inicio?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                    {{ $form.inicio.error?.message }}
+                </Message>
             </div>
 
             <div class="popover-info">
-                <span style="font-weight: bold;">Início</span>
+                <IftaLabel style="width: 100%;">
+                    <label for="fim">Fim</label>
 
-                <DatePicker
-                    placeholder="Início da tarefa"
-                    v-model="popoverForm.inicio"
-                    :manualInput="false"
-                    :step-minute="30"
-                    date-format="dd/mm/yy"
-                    show-icon
-                    show-button-bar
-                    show-time
-                    @clear-click="popoverForm.inicio = ''"
-                />
-            </div>
+                    <DatePicker
+                        placeholder="Início da tarefa"
+                        v-model="popoverForm.fim"
+                        :manualInput="false"
+                        :step-minute="30"
+                        input-id="fim"
+                        name="fim"
+                        date-format="dd/mm/yy"
+                        show-icon
+                        show-button-bar
+                        show-time
+                        @clear-click="popoverForm.fim = ''"
+                    />
+                </IftaLabel>
 
-            <div class="popover-info">
-                <span style="font-weight: bold;">Fim</span>
-
-                <DatePicker
-                    placeholder="Fim da tarefa"
-                    v-model="popoverForm.fim"
-                    :manualInput="false"
-                    :step-minute="30"
-                    date-format="dd/mm/yy"
-                    show-icon
-                    show-button-bar
-                    show-time
-                    @clear-click="popoverForm.fim = ''"
-                />
+                <Message v-if="$form.fim?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                    {{ $form.fim.error?.message }}
+                </Message>
             </div>
 
             <div class="popover-info">
@@ -415,16 +461,10 @@ const resetarDados = () => {
                     Sem máquinas
                 </p>
             </div>
-
-            <div class="popover-info">
-                <span style="font-weight: bold;">Cor</span>
-
-                <ColorPicker v-model="popoverForm.cor" />
-            </div>
-        </div>
+        </Form>
 
         <div class="button-container">
-            <Button label="Salvar" rounded style="margin-top: 10px;" @click="salvarAlteracoesTarefa()" />
+            <Button label="Salvar" type="submit" rounded style="margin-top: 10px;" />
         </div>
     </Popover>
 </template>
