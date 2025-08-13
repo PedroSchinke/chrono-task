@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, reactive } from 'vue';
 import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
 import { getDates } from "@/helpers/getDates.js";
 import { getDiaSemana } from "@/helpers/getDiaSemana.js";
 import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
@@ -18,6 +19,7 @@ import ModalLoading from "@/components/ModalLoading.vue";
 import Message from "primevue/message";
 
 const toast = useToast();
+const confirm = useConfirm();
 
 const props = defineProps([
     'tarefa',
@@ -35,6 +37,7 @@ const tarefaLocal = computed(() => {
 });
 
 const loading = ref(false);
+const loadingMessage = ref('Carregando...');
 
 const popoverForm = reactive({
     titulo: props.tarefa.titulo,
@@ -120,6 +123,10 @@ const resolver = ({ values }) => {
 
     if (!values.fim) {
         errors.fim = [{ message: 'Fim é obrigatório.' }];
+    }
+
+    if (values.inicio > values.fim) {
+        errors.fim = [{ message: 'Data do fim precisa ser posterior à data de início.' }];
     }
 
     return { values, errors };
@@ -270,6 +277,7 @@ const stopDrag = () => {
 }
 
 const salvarAlteracoesTarefa = async () => {
+    loadingMessage.value = 'Salvando Alterações...';
     loading.value = true;
 
     try {
@@ -304,6 +312,41 @@ const salvarAlteracoesTarefa = async () => {
     toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa editada com sucesso', life: 3000 });
 
     emit('recarregar');
+}
+
+const confirmarExclusaoTarefa = async () => {
+    confirm.require({
+        header: 'Confirmação',
+        message: `Tem certeza que deseja excluir a tarefa "${props.tarefa.titulo}"?`,
+        rejectProps: {
+            label: 'Não, cancelar',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Sim, excluir'
+        },
+        accept: () => {
+            excluirTarefa();
+        }
+    });
+}
+
+const excluirTarefa = async () => {
+    loadingMessage.value = 'Excluindo Tarefa...';
+    loading.value = true;
+
+    try {
+        await api.post(`/tarefa/deletar/${props.tarefa.id}`);
+
+        loading.value = false;
+
+        toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa excluída com sucesso', life: 3000 });
+    } catch (e) {
+        loading.value = false;
+
+        toast.add({ severity: 'error', summary: 'Erro', detail: e.response.data.message, life: 3000 });
+    }
 }
 
 const validarHorarios = () => {
@@ -348,7 +391,7 @@ const resetarDados = () => {
 </script>
 
 <template>
-    <ModalLoading :is-loading="loading" message="Salvando alterações..." />
+    <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
     <div
         :id="`tarefa-${tarefaLocal.id}`"
@@ -365,19 +408,38 @@ const resetarDados = () => {
     </div>
 
     <Popover ref="tarefaPopover" @hide="resetarDados()" @show="resetarDados()">
-        <Form v-slot="$form" :initial-values="popoverForm" :resolver class="popover-tarefa-infos" @submit="salvarAlteracoesTarefa">
+        <Form
+            v-slot="$form"
+            :initial-values="popoverForm"
+            :resolver
+            class="popover-form"
+            @submit="salvarAlteracoesTarefa"
+        >
             <div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <IftaLabel style="width: 100%;">
                         <label for="titulo">Título</label>
 
-                        <InputText id="titulo" name="titulo" v-model="popoverForm.titulo" fluid />
+                        <InputText v-model="popoverForm.titulo" id="titulo" name="titulo" fluid />
                     </IftaLabel>
 
-                    <ColorPicker v-model="popoverForm.cor" title="Selecionar Cor" input-id="cor-input" format="hex" />
+                    <ColorPicker
+                        v-model="popoverForm.cor"
+                        title="Selecionar Cor"
+                        input-id="cor"
+                        name="cor"
+                        format="hex"
+                    />
                 </div>
 
-                <Message v-if="$form.titulo?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                <Message
+                    v-if="$form.titulo?.invalid"
+                    severity="error"
+                    size="small"
+                    variant="simple"
+                    class="input-message"
+                    style="margin-top: 3px;"
+                >
                     {{ $form.titulo.error?.message }}
                 </Message>
             </div>
@@ -386,7 +448,7 @@ const resetarDados = () => {
                 <IftaLabel style="width: 100%;">
                     <label for="descricao">Descrição</label>
 
-                    <InputText id="descricao" name="descricao" v-model="popoverForm.descricao" fluid />
+                    <InputText v-model="popoverForm.descricao" id="descricao" name="descricao" fluid />
                 </IftaLabel>
             </div>
 
@@ -395,17 +457,15 @@ const resetarDados = () => {
                     <label for="inicio">Início</label>
 
                     <DatePicker
-                        placeholder="Início da tarefa"
                         v-model="popoverForm.inicio"
+                        placeholder="Início da tarefa"
                         :manualInput="false"
-                        :step-minute="30"
+                        :step-minute="5"
                         input-id="inicio"
                         name="inicio"
                         date-format="dd/mm/yy"
                         show-icon
-                        show-button-bar
                         show-time
-                        @clear-click="popoverForm.inicio = ''"
                     />
                 </IftaLabel>
 
@@ -419,17 +479,16 @@ const resetarDados = () => {
                     <label for="fim">Fim</label>
 
                     <DatePicker
-                        placeholder="Início da tarefa"
                         v-model="popoverForm.fim"
+                        placeholder="Início da tarefa"
                         :manualInput="false"
-                        :step-minute="30"
+                        :step-minute="5"
+                        :min-date="new Date(dayjs($form.inicio).add(5, 'minute'))"
                         input-id="fim"
                         name="fim"
                         date-format="dd/mm/yy"
                         show-icon
-                        show-button-bar
                         show-time
-                        @clear-click="popoverForm.fim = ''"
                     />
                 </IftaLabel>
 
@@ -461,11 +520,20 @@ const resetarDados = () => {
                     Sem máquinas
                 </p>
             </div>
-        </Form>
 
-        <div class="button-container">
-            <Button label="Salvar" type="submit" rounded style="margin-top: 10px;" />
-        </div>
+            <div class="button-container">
+                <Button label="Salvar" type="submit" rounded />
+
+                <Button
+                    title="Excluir Tarefa"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    variant="text"
+                    rounded
+                    @click="confirmarExclusaoTarefa()"
+                />
+            </div>
+        </Form>
     </Popover>
 </template>
 
@@ -515,7 +583,7 @@ const resetarDados = () => {
     white-space: break-spaces;
 }
 
-.popover-tarefa-infos {
+.popover-form {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -535,7 +603,9 @@ const resetarDados = () => {
 
 .button-container {
     width: 100%;
+    margin-top: 10px;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
 }
 </style>

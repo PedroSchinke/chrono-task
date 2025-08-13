@@ -7,11 +7,11 @@ use App\Http\Helpers\DateHelper;
 use App\Http\Services\TarefaService;
 use App\Models\Colaborador;
 use App\Models\ColaboradorTarefa;
-use App\Models\Maquina;
 use App\Models\MaquinaTarefa;
 use App\Models\Tarefa;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TarefaController extends Controller
@@ -134,7 +134,7 @@ class TarefaController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Maquina $maquina)
+    public function show()
     {
         //
     }
@@ -142,7 +142,7 @@ class TarefaController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Maquina $maquina)
+    public function edit()
     {
         //
     }
@@ -206,9 +206,20 @@ class TarefaController extends Controller
 
     /**
      * Remove the specified resource from storage.
+     *
+     * @return JsonResponse
+     * @throws Exception
      */
-    public function destroy(Maquina $maquina)
+    public function destroy(Request $request, $tarefa_id)
     {
-        //
+        $tarefa = Tarefa::find($tarefa_id);
+
+        if (!$tarefa) {
+            throw new Exception("Não foi possível encontrar tarefa de id {$tarefa_id}.");
+        }
+
+        $tarefa->delete();
+
+        return response()->json(['mensagem' => 'Tarefa excluída com sucesso!'], 204);
     }
 }

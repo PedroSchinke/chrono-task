@@ -17,6 +17,7 @@ Route::post('/maquina', [MaquinaController::class, 'store']);
 Route::get('/tarefas', [TarefaController::class, 'index']);
 Route::post('/tarefa', [TarefaController::class, 'store']);
 Route::post('/tarefa/{tarefa_id}', [TarefaController::class, 'update']);
+Route::post('/tarefa/deletar/{tarefa_id}', [TarefaController::class, 'destroy']);
 Route::post('/tarefa/{tarefa_id}/reposicionar', [TarefaController::class, 'reposicionarTarefa']);
 
 /**
