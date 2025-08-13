@@ -58,6 +58,10 @@ const resolver = ({ values }) => {
         errors.fim = [{ message: 'Fim é obrigatório.' }];
     }
 
+    if (values.inicio > values.fim) {
+        errors.fim = [{ message: 'Data do fim precisa ser posterior à data de início.' }];
+    }
+
     return { values, errors };
 }
 
@@ -173,9 +177,8 @@ const limparCampos = () => {
     form.titulo = '';
     form.descricao = '';
     form.datas = [];
-    form.periodo_diario_inicio = dayjs('08:00', 'HH:mm').toDate();
-    form.periodo_diario_fim = dayjs('18:00', 'HH:mm').toDate();
-    form.maquina = {};
+    form.colaboradores = [];
+    form.maquinas = [];
     form.cor = 'ff0000';
 }
 
@@ -189,8 +192,8 @@ const closeDialog = () => {
     dialogVisible.value = false;
 }
 
-watch([ () => form.datas, () => form.periodo_diario_inicio, () => form.periodo_diario_fim ], () => {
-    form.maquina = {};
+watch([ () => form.inicio, () => form.fim ], () => {
+    form.maquinas = [];
 });
 
 defineExpose({ openDialog, closeDialog });
@@ -206,17 +209,23 @@ defineExpose({ openDialog, closeDialog });
     <Dialog header="Adicionar Tarefa" :style="{ width: '60%' }" v-model:visible="dialogVisible">
         <Form v-slot="$form" :initial-values="form" :resolver class="dialog-content" @submit="adicionarTarefa">
             <div>
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="titulo-cor-container">
                     <IftaLabel style="width: 100%;">
                         <label for="titulo">Título</label>
 
                         <InputText id="titulo" name="titulo" v-model="form.titulo" fluid />
                     </IftaLabel>
 
-                    <ColorPicker v-model="form.cor" title="Selecionar Cor" input-id="cor-input" format="hex" />
+                    <ColorPicker v-model="form.cor" title="Selecionar Cor" input-id="cor" name="cor" format="hex" />
                 </div>
 
-                <Message v-if="$form.titulo?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                <Message
+                    v-if="$form.titulo?.invalid"
+                    severity="error"
+                    size="small"
+                    variant="simple"
+                    class="input-message"
+                >
                     {{ $form.titulo.error?.message }}
                 </Message>
             </div>
@@ -235,47 +244,61 @@ defineExpose({ openDialog, closeDialog });
                 />
             </IftaLabel>
 
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <IftaLabel>
-                    <label for="inicio">Início</label>
+            <div class="datas-inputs-container">
+                <div>
+                    <IftaLabel>
+                        <label for="inicio">Início</label>
 
-                    <DatePicker
-                        v-model="form.inicio"
-                        :manualInput="false"
-                        input-id="titulo"
-                        date-format="dd/mm/yy"
-                        show-icon
-                        show-button-bar
-                        show-time
-                        :step-minute="5"
-                        @clear-click="form.inicio = new Date()"
-                    />
+                        <DatePicker
+                            v-model="form.inicio"
+                            :manualInput="false"
+                            :step-minute="5"
+                            input-id="inicio"
+                            name="inicio"
+                            date-format="dd/mm/yy"
+                            show-icon
+                            show-time
+                        />
+                    </IftaLabel>
 
-                    <Message v-if="$form.inicio?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                    <Message
+                        v-if="$form.inicio?.invalid"
+                        severity="error"
+                        size="small"
+                        variant="simple"
+                        class="input-message"
+                    >
                         {{ $form.inicio.error?.message }}
                     </Message>
-                </IftaLabel>
+                </div>
 
-                <IftaLabel>
-                    <label for="fim">Fim</label>
+                <div>
+                    <IftaLabel>
+                        <label for="fim">Fim</label>
 
-                    <DatePicker
-                        v-model="form.fim"
-                        :manualInput="false"
-                        :min-date="new Date(dayjs(form.inicio).add(5, 'minute'))"
-                        input-id="fim"
-                        date-format="dd/mm/yy"
-                        show-icon
-                        show-button-bar
-                        show-time
-                        :step-minute="5"
-                        @clear-click="form.fim = new Date()"
-                    />
+                        <DatePicker
+                            v-model="form.fim"
+                            :manualInput="false"
+                            :min-date="new Date(dayjs(form.inicio).add(5, 'minute'))"
+                            :step-minute="5"
+                            input-id="fim"
+                            name="fim"
+                            date-format="dd/mm/yy"
+                            show-icon
+                            show-time
+                        />
+                    </IftaLabel>
 
-                    <Message v-if="$form.fim?.invalid" severity="error" size="small" variant="simple" class="input-message">
+                    <Message
+                        v-if="$form.fim?.invalid"
+                        severity="error"
+                        size="small"
+                        variant="simple"
+                        class="input-message"
+                    >
                         {{ $form.fim.error?.message }}
                     </Message>
-                </IftaLabel>
+                </div>
             </div>
 
             <Fieldset style="margin-top: -15px;">
@@ -372,7 +395,20 @@ defineExpose({ openDialog, closeDialog });
     gap: 10px;
 }
 
+.titulo-cor-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.datas-inputs-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
 .input-message {
+    position: relative;
     margin-top: 3px;
 }
 
