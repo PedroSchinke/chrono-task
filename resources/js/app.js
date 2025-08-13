@@ -6,6 +6,7 @@ import 'primeicons/primeicons.css';
 import PrimeVue from 'primevue/config';
 import Material from '@primeuix/themes/material';
 import ToastService from 'primevue/toastservice';
+import ConfirmationService from "primevue/confirmationservice";
 
 createInertiaApp({
     resolve: name => import(`./pages/home/${name}.vue`),
@@ -24,6 +25,7 @@ createInertiaApp({
             }
         });
         vueApp.use(ToastService);
+        vueApp.use(ConfirmationService);
         vueApp.mount(el);
     },
 });

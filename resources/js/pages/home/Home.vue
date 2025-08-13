@@ -1,5 +1,6 @@
 <script setup>
 import Toast from "primevue/toast";
+import ConfirmDialog from "primevue/confirmdialog";
 import GraficoGantt from "./components/GraficoGantt.vue";
 import Maquinas from "./components/Maquinas.vue";
 import Colaboradores from "@/pages/home/components/Colaboradores.vue";
@@ -8,6 +9,8 @@ import Colaboradores from "@/pages/home/components/Colaboradores.vue";
 
 <template>
     <Toast />
+
+    <ConfirmDialog />
 
     <main class="main">
         <GraficoGantt />
