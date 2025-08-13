@@ -14,7 +14,7 @@ import Column from "primevue/column";
 import Paginator from "primevue/paginator";
 import api from "@/axios.js";
 
-const emit = defineEmits(['onSelect']);
+const emit = defineEmits(['onSelect', 'onClose']);
 
 const colaboradores = ref([]);
 const colaboradoresSelecionados = ref([]);
@@ -163,6 +163,7 @@ defineExpose({ openDialog, closeDialog });
         :style="{ width: '90%' }"
         :content-style="{ padding: '0 24px' }"
         @show="getColaboradores()"
+        @hide="$emit('onClose')"
     >
         <Fieldset legend="Pesquisar" style="margin-top: -15px;">
             <div class="filter-container" @keyup.enter="getColaboradores()">

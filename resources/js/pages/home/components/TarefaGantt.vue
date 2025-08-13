@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, onMounted } from 'vue';
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { getDates } from "@/helpers/getDates.js";
@@ -55,6 +55,7 @@ const selectColaboradores = ref(null);
 const selectMaquinas = ref(null);
 
 const tarefaPopover = ref();
+const isPopoverDismissable = ref(true);
 const blocoFoiArrastado = ref(false);
 
 const dragging = ref(false);
@@ -380,6 +381,8 @@ const validarHorarios = () => {
 }
 
 const adicionarColaboradores = ({ values }) => {
+    isPopoverDismissable.value = true;
+
     values.forEach((value) => {
         const colaboradorJaSelecionado = popoverForm.colaboradores.some((colaborador) => {
             return colaborador.id === value.id;
@@ -400,7 +403,15 @@ const adicionarColaboradores = ({ values }) => {
     });
 }
 
+const removerColaborador = (colaboradorId) => {
+    selectColaboradores.value = selectColaboradores.value.filter((colaborador) => {
+        return colaborador.id !== colaboradorId;
+    });
+}
+
 const adicionarMaquinas = ({ values }) => {
+    isPopoverDismissable.value = true;
+
     values.forEach((value) => {
         const maquinaJaSelecionada = popoverForm.maquinas.some((maquina) => {
             return maquina.id === value.id;
@@ -421,6 +432,12 @@ const adicionarMaquinas = ({ values }) => {
     });
 }
 
+const removerMaquina = (maquinaId) => {
+    selectMaquinas.value = selectMaquinas.value.filter((maquina) => {
+        return maquina.id !== maquinaId;
+    });
+}
+
 const toggle = (event) => {
     if (!blocoFoiArrastado.value) {
         tarefaPopover.value.toggle(event);
@@ -430,17 +447,20 @@ const toggle = (event) => {
 const resetarDados = () => {
     popoverForm.titulo = tarefaLocal.value.titulo;
     popoverForm.descricao = tarefaLocal.value.descricao;
-    popoverForm.maquina = [];
+    popoverForm.colaboradores = [];
+    popoverForm.maquinas = [];
     popoverForm.inicio = new Date(tarefaLocal.value.inicio);
     popoverForm.fim = new Date(tarefaLocal.value.fim);
     popoverForm.cor = tarefaLocal.value.cor.startsWith('#') ? tarefaLocal.value.cor : '#' + tarefaLocal.value.cor;
 }
 
 const openSelectColaboradores = () => {
+    isPopoverDismissable.value = false;
     selectColaboradores.value.openDialog();
 }
 
 const openSelectMaquinas = () => {
+    isPopoverDismissable.value = false;
     selectMaquinas.value.openDialog();
 }
 </script>
@@ -448,9 +468,17 @@ const openSelectMaquinas = () => {
 <template>
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
-    <SelectColaboradores ref="selectColaboradores" @on-select="(colaboradores) => adicionarColaboradores(colaboradores)" />
+    <SelectColaboradores
+        ref="selectColaboradores"
+        @on-select="(colaboradores) => adicionarColaboradores(colaboradores)"
+        @on-close="isPopoverDismissable = true"
+    />
 
-    <SelectMaquinas ref="selectMaquinas"  @on-select="(maquinas) => adicionarMaquinas(maquinas)" />
+    <SelectMaquinas
+        ref="selectMaquinas"
+        @on-select="(maquinas) => adicionarMaquinas(maquinas)"
+        @on-close="isPopoverDismissable = true"
+    />
 
     <div
         :id="`tarefa-${tarefaLocal.id}`"
@@ -466,7 +494,7 @@ const openSelectMaquinas = () => {
         <div class="resize-handle right" @mousedown="startResize('end', $event)"></div>
     </div>
 
-    <Popover ref="tarefaPopover" @hide="resetarDados()" @show="resetarDados()">
+    <Popover ref="tarefaPopover" :dismissable="isPopoverDismissable" @hide="resetarDados()" @show="resetarDados()">
         <Form
             v-slot="$form"
             :initial-values="popoverForm"
@@ -570,7 +598,12 @@ const openSelectMaquinas = () => {
                     />
                 </div>
 
-                <Chip v-for="colaborador in popoverForm.colaboradores">
+                <Chip
+                    v-for="colaborador in popoverForm.colaboradores"
+                    :key="colaborador.id"
+                    removable
+                    @remove="removerColaborador(colaborador.id)"
+                >
                     {{ colaborador.nome_completo }}
                 </Chip>
 
@@ -593,7 +626,12 @@ const openSelectMaquinas = () => {
                     />
                 </div>
 
-                <Chip v-for="maquina in popoverForm.maquinas">
+                <Chip
+                    v-for="maquina in popoverForm.maquinas"
+                    :key="maquina.id"
+                    removable
+                    @remove="removerMaquina(maquina.id)"
+                >
                     {{ maquina.nome }}
                 </Chip>
 
@@ -688,5 +726,9 @@ const openSelectMaquinas = () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+:deep(.p-chip) {
+    width: fit-content;
 }
 </style>
