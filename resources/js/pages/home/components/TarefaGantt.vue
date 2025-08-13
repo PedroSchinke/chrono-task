@@ -17,6 +17,8 @@ import DatePicker from "primevue/datepicker";
 import Chip from 'primevue/chip';
 import ModalLoading from "@/components/ModalLoading.vue";
 import Message from "primevue/message";
+import SelectColaboradores from "@/pages/home/components/SelectColaboradores.vue";
+import SelectMaquinas from "@/pages/home/components/SelectMaquinas.vue";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -42,11 +44,15 @@ const loadingMessage = ref('Carregando...');
 const popoverForm = reactive({
     titulo: props.tarefa.titulo,
     descricao: props.tarefa.descricao,
-    maquina: [],
     inicio: new Date(props.tarefa.inicio),
     fim: new Date(props.tarefa.fim),
+    colaboradores: props.tarefa.colaboradores,
+    maquinas: props.tarefa.maquinas,
     cor: props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor
 });
+
+const selectColaboradores = ref(null);
+const selectMaquinas = ref(null);
 
 const tarefaPopover = ref();
 const blocoFoiArrastado = ref(false);
@@ -288,9 +294,8 @@ const salvarAlteracoesTarefa = async () => {
             descricao: popoverForm.descricao,
             inicio: popoverForm.inicio,
             fim: popoverForm.fim,
-            id_maquina: popoverForm.maquina.id,
-            periodo_diario_inicio: popoverForm.periodo_diario_inicio,
-            periodo_diario_fim: popoverForm.periodo_diario_fim,
+            colaboradores: popoverForm.colaboradores,
+            maquinas: popoverForm.maquinas,
             cor: popoverForm.cor
         }
 
@@ -374,6 +379,48 @@ const validarHorarios = () => {
     });
 }
 
+const adicionarColaboradores = ({ values }) => {
+    values.forEach((value) => {
+        const colaboradorJaSelecionado = popoverForm.colaboradores.some((colaborador) => {
+            return colaborador.id === value.id;
+        });
+
+        if (colaboradorJaSelecionado) {
+            toast.add({
+                summary: 'Atenção',
+                detail: `${value.nome_completo} já está selecionado`,
+                severity: 'warn',
+                life: 3000
+            });
+
+            return;
+        }
+
+        popoverForm.colaboradores.push(value);
+    });
+}
+
+const adicionarMaquinas = ({ values }) => {
+    values.forEach((value) => {
+        const maquinaJaSelecionada = popoverForm.maquinas.some((maquina) => {
+            return maquina.id === value.id;
+        });
+
+        if (maquinaJaSelecionada) {
+            toast.add({
+                summary: 'Atenção',
+                detail: `${value.nome} já está selecionado(a)`,
+                severity: 'warn',
+                life: 3000
+            });
+
+            return;
+        }
+
+        popoverForm.maquinas.push(value);
+    });
+}
+
 const toggle = (event) => {
     if (!blocoFoiArrastado.value) {
         tarefaPopover.value.toggle(event);
@@ -388,10 +435,22 @@ const resetarDados = () => {
     popoverForm.fim = new Date(tarefaLocal.value.fim);
     popoverForm.cor = tarefaLocal.value.cor.startsWith('#') ? tarefaLocal.value.cor : '#' + tarefaLocal.value.cor;
 }
+
+const openSelectColaboradores = () => {
+    selectColaboradores.value.openDialog();
+}
+
+const openSelectMaquinas = () => {
+    selectMaquinas.value.openDialog();
+}
 </script>
 
 <template>
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
+
+    <SelectColaboradores ref="selectColaboradores" @on-select="(colaboradores) => adicionarColaboradores(colaboradores)" />
+
+    <SelectMaquinas ref="selectMaquinas"  @on-select="(maquinas) => adicionarMaquinas(maquinas)" />
 
     <div
         :id="`tarefa-${tarefaLocal.id}`"
@@ -498,25 +557,47 @@ const resetarDados = () => {
             </div>
 
             <div class="popover-info">
-                <span style="font-weight: bold;">Colaboradores</span>
+                <div style="display: flex; align-items: center; gap: 3px;">
+                    <span style="font-weight: bold;">Colaboradores</span>
 
-                <Chip v-for="colaborador in tarefaLocal.colaboradores">
+                    <Button
+                        title="Adicionar Colaboradores"
+                        icon="pi pi-plus"
+                        rounded
+                        variant="text"
+                        size="small"
+                        @click="openSelectColaboradores()"
+                    />
+                </div>
+
+                <Chip v-for="colaborador in popoverForm.colaboradores">
                     {{ colaborador.nome_completo }}
                 </Chip>
 
-                <p v-if="tarefaLocal.colaboradores.length === 0" class="empty-message">
+                <p v-if="popoverForm.colaboradores.length === 0" class="empty-message">
                     Sem colaboradores
                 </p>
             </div>
 
             <div class="popover-info">
-                <span style="font-weight: bold;">Máquinas</span>
+                <div style="display: flex; align-items: center; gap: 3px;">
+                    <span style="font-weight: bold;">Máquinas</span>
 
-                <Chip v-for="maquina in tarefaLocal.maquinas">
+                    <Button
+                        title="Adicionar Máquinas"
+                        icon="pi pi-plus"
+                        rounded
+                        variant="text"
+                        size="small"
+                        @click="openSelectMaquinas()"
+                    />
+                </div>
+
+                <Chip v-for="maquina in popoverForm.maquinas">
                     {{ maquina.nome }}
                 </Chip>
 
-                <p v-if="tarefaLocal.colaboradores.length === 0" class="empty-message">
+                <p v-if="popoverForm.colaboradores.length === 0" class="empty-message">
                     Sem máquinas
                 </p>
             </div>
