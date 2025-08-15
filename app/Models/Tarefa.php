@@ -20,4 +20,12 @@ class Tarefa extends Model
     {
         return $this->belongsToMany(Maquina::class, 'maquina_tarefa', 'tarefa_id', 'maquina_id');
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($tarefa) {
+            $tarefa->colaboradores()->detach();
+            $tarefa->maquinas()->detach();
+        });
+    }
 }
