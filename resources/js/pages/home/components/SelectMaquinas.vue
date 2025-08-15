@@ -195,7 +195,7 @@ defineExpose({ openDialog, closeDialog });
                     removable
                     @remove="removeMaquina(maquina)"
                 >
-                    {{ maquina.nome_completo }}
+                    {{ maquina.nome }}
                 </Chip>
 
                 <p v-if="maquinasSelecionadas.length === 0" style="margin: 0; font-style: italic;">
