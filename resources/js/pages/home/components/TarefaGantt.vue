@@ -404,7 +404,7 @@ const adicionarColaboradores = ({ values }) => {
 }
 
 const removerColaborador = (colaboradorId) => {
-    selectColaboradores.value = selectColaboradores.value.filter((colaborador) => {
+    popoverForm.colaboradores = popoverForm.colaboradores.filter((colaborador) => {
         return colaborador.id !== colaboradorId;
     });
 }
@@ -433,7 +433,7 @@ const adicionarMaquinas = ({ values }) => {
 }
 
 const removerMaquina = (maquinaId) => {
-    selectMaquinas.value = selectMaquinas.value.filter((maquina) => {
+    popoverForm.maquinas = popoverForm.maquinas.filter((maquina) => {
         return maquina.id !== maquinaId;
     });
 }
@@ -445,13 +445,13 @@ const toggle = (event) => {
 }
 
 const resetarDados = () => {
-    popoverForm.titulo = tarefaLocal.value.titulo;
-    popoverForm.descricao = tarefaLocal.value.descricao;
-    popoverForm.colaboradores = [];
-    popoverForm.maquinas = [];
-    popoverForm.inicio = new Date(tarefaLocal.value.inicio);
-    popoverForm.fim = new Date(tarefaLocal.value.fim);
-    popoverForm.cor = tarefaLocal.value.cor.startsWith('#') ? tarefaLocal.value.cor : '#' + tarefaLocal.value.cor;
+    popoverForm.titulo = props.tarefa.titulo;
+    popoverForm.descricao = props.tarefa.descricao;
+    popoverForm.colaboradores = props.tarefa.colaboradores;
+    popoverForm.maquinas = props.tarefa.maquinas;
+    popoverForm.inicio = new Date(props.tarefa.inicio);
+    popoverForm.fim = new Date(props.tarefa.fim);
+    popoverForm.cor = props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor;
 }
 
 const openSelectColaboradores = () => {
@@ -635,7 +635,7 @@ const openSelectMaquinas = () => {
                     {{ maquina.nome }}
                 </Chip>
 
-                <p v-if="popoverForm.colaboradores.length === 0" class="empty-message">
+                <p v-if="popoverForm.maquinas.length === 0" class="empty-message">
                     Sem máquinas
                 </p>
             </div>
