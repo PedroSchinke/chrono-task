@@ -19,26 +19,6 @@ class MaquinaController extends Controller
     {
         $query = Maquina::query();
 
-        $temFiltroDeData = $request->filled('data_inicio') && $request->filled('data_fim');
-
-        if ($temFiltroDeData) {
-            $dataInicio = DateHelper::formatarData($request->input('data_inicio'));
-            $dataFim = DateHelper::formatarData($request->input('data_fim'));
-            $horaInicio = DateHelper::formatarData($request->input('periodo_diario_inicio'), 'H:i');
-            $horaFim = DateHelper::formatarData($request->input('periodo_diario_fim'), 'H:i');
-
-            $diasSemana = DateHelper::getDiasDaSemana($dataInicio, $dataFim);
-
-            $quantidadeDias = count($diasSemana);
-
-            $maquinas->whereHas('tarefas', function ($query) use ($horaInicio, $horaFim) {
-                $query->whereTime('inicio', '<=', $horaInicio)
-                      ->whereTime('fim', '>=', $horaFim);
-            }, '=', $quantidadeDias);
-        } else {
-            $maquinas->with(['horariosDisponiveis', 'tarefas']);
-        }
-
         if (!empty($request->get('id'))) {
             $query->where('id', $request->get('id'));
         }
@@ -64,9 +44,7 @@ class MaquinaController extends Controller
 
         $query->orderBy($sortField, $sortOrder);
 
-        return response()->json([
-            'data' => $maquinas->get(),
-        ]);
+        return response()->json(['data' => $query->paginate($request->get('per_page', 50))]);
     }
 
     /**
@@ -90,7 +68,8 @@ class MaquinaController extends Controller
         ]);
 
         Maquina::create([
-            'nome' => $request->get('nome')
+            'nome' => $request->get('nome'),
+            'descricao' => $request->get('descricao', '')
         ]);
 
         return response()->json(['mensagem' => 'Máquina criada com sucesso!'], 201);
