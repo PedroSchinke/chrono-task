@@ -85,22 +85,35 @@ const adicionarTarefa = async ({ valid }) => {
     }
 
     try {
-        await api.post('/tarefa', params);
-    } catch (e) {
+        const resp = await api.post('/tarefa', params);
+
         loading.value = false;
 
-        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível adicionar tarefa', life: 3000 });
+        toast.add({
+            severity: 'success',
+            summary: 'Sucesso!',
+            detail: `Tarefa ${resp.data.tarefa.titulo} adicionada com sucesso`,
+            life: 3000
+        });
 
-        return;
+        emits('recarregar-tarefas');
+
+        closeDialog();
+    } catch (e) {
+        console.log(e);
+        loading.value = false;
+
+        if (e.response.status === 500) {
+            toast.add({
+                severity: 'error',
+                summary: 'Algo deu errado...',
+                detail: 'Não foi possível adicionar tarefa',
+                life: 3000
+            });
+        } else {
+            toast.add({ severity: 'error', summary: 'Erro', detail: e.response.data.message, life: 5000 });
+        }
     }
-
-    loading.value = false;
-
-    toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa adicionada com sucesso', life: 3000 });
-
-    emits('recarregar-tarefas');
-
-    closeDialog();
 }
 
 const adicionarColaboradores = ({ values }) => {
