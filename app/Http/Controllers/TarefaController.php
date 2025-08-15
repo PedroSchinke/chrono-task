@@ -5,11 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Helpers\DateHelper;
 use App\Http\Services\TarefaService;
-use App\Models\Colaborador;
-use App\Models\ColaboradorTarefa;
-use App\Models\MaquinaTarefa;
 use App\Models\Tarefa;
-use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,79 +50,7 @@ class TarefaController extends Controller
             'cor' => 'required|string',
         ]);
 
-        $inicio = Carbon::parse($request->get('inicio'));
-        $fim = Carbon::parse($request->get('fim'));
-
-        $colaboradores = $request->get('colaboradores', []);
-
-        foreach ($colaboradores as $colaborador) {
-            $colaboradorModel = Colaborador::with('tarefas')->find($colaborador['id']);
-
-            if (!$colaboradorModel) {
-                return response()->json(['erro' => "Colaborador de ID {$colaborador['id']} não encontrado."], 404);
-            }
-
-            $jaPossuiTarefaNoPeriodo = $colaboradorModel->tarefas()
-                ->where('inicio', '<', $fim)
-                ->where('fim', '>', $inicio)
-                ->exists();
-
-            if ($jaPossuiTarefaNoPeriodo) {
-                return response()->json([
-                    'erro' => "O colaborador {$colaboradorModel->nome_completo} já possui tarefa no período informado."
-                ], 422);
-            }
-        }
-
-        $maquinas = $request->get('maquinas', []);
-
-        foreach ($maquinas as $maquina) {
-            $maquinaModel = Maquina::with('tarefas')->find($maquina['id']);
-
-            if (!$maquinaModel) {
-                return response()->json(['erro' => "Máquina de ID {$maquina['id']} não encontrado."], 404);
-            }
-
-            $jaPossuiTarefaNoPeriodo = $maquinaModel->tarefas()
-                ->where('inicio', '<', $fim)
-                ->where('fim', '>', $inicio)
-                ->exists();
-
-            if ($jaPossuiTarefaNoPeriodo) {
-                return response()->json([
-                    'erro' => "A máquina {$maquinaModel->nome} já possui tarefa no período informado."
-                ], 422);
-            }
-        }
-
-        $inicio = DateHelper::formatarData($request->get('inicio'));
-        $fim = DateHelper::formatarData($request->get('fim'));
-
-        $tarefa = Tarefa::create([
-            'titulo' => $request->get('titulo'),
-            'descricao' => $request->get('descricao'),
-            'inicio' => $inicio,
-            'fim' => $fim,
-            'cor' => $request->get('cor'),
-        ]);
-
-        if (!empty($colaboradores)) {
-            foreach ($colaboradores as $colaborador) {
-                ColaboradorTarefa::create([
-                    'colaborador_id' => $colaborador['id'],
-                    'tarefa_id' => $tarefa->id,
-                ]);
-            }
-        }
-
-        if (!empty($colaboradores)) {
-            foreach ($colaboradores as $colaborador) {
-                MaquinaTarefa::create([
-                    'colaborador_id' => $colaborador['id'],
-                    'tarefa_id' => $tarefa->id,
-                ]);
-            }
-        }
+        $tarefa = $this->tarefaService->criarTarefa($request->all());
 
         return response()->json(['mensagem' => 'Tarefa criada com sucesso!', 'tarefa' => $tarefa], 201);
     }
