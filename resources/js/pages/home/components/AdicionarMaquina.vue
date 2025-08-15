@@ -1,36 +1,51 @@
 <script setup>
-import { ref } from "vue";
+import { ref, reactive } from "vue";
 import { useToast } from 'primevue/usetoast';
+import { Form } from '@primevue/forms';
 import api from '@/axios';
 import Dialog from "primevue/dialog";
+import IftaLabel from "primevue/iftalabel";
 import InputText from "primevue/inputtext";
+import Textarea from "primevue/textarea";
 import Button from "primevue/button";
 import ModalLoading from "@/components/ModalLoading.vue";
+import Message from "primevue/message";
 
 const emits = defineEmits(['recarregar-maquinas']);
 
 const dialogVisible = ref(false);
 
-const nome = ref('');
+const form = reactive({
+    nome: '',
+    descricao: ''
+});
 
 const loading = ref(false);
 const loadingMessage = ref('Adicionando Máquina...');
 
+const maxCaracteresDescricao = 200;
+
 const toast = useToast();
 
-const adicionarMaquina = async () => {
-    try {
-        validaNome()
-    } catch (e) {
-        toast.add({ severity: 'error', summary: 'Alerta', detail: e.message, life: 3000 });
+const resolver = ({ values }) => {
+    const errors = {};
 
+    if (!values.nome) {
+        errors.nome = [{ message: 'Nome é obrigatório.' }];
+    }
+
+    return { values, errors };
+}
+
+const adicionarMaquina = async ({ valid }) => {
+    if (!valid) {
         return;
     }
 
     loading.value = true;
 
     try {
-        const resp = await api.post('/maquina', { nome: nome.value });
+        const resp = await api.post('/maquina', form);
 
         loading.value = false;
 
@@ -46,20 +61,19 @@ const adicionarMaquina = async () => {
     }
 }
 
-const validaNome = () => {
-    if (nome.value.trim() === '') {
-        throw new Error('É preciso inserir o nome da máquina');
-    }
+const limpaCampos = () => {
+    form.nome = '';
+    form.descricao = '';
 }
 
 const openDialog = () => {
-    nome.value = '';
+    limpaCampos();
 
     dialogVisible.value = true;
 }
 
 const closeDialog = () => {
-    nome.value = '';
+    limpaCampos();
 
     dialogVisible.value = false;
 }
@@ -71,11 +85,40 @@ defineExpose({ openDialog, closeDialog });
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
     <Dialog header="Adicionar Máquina" v-model:visible="dialogVisible">
-        <form class="dialog-content">
-            <InputText placeholder="Nome" v-model="nome"/>
+        <Form v-slot="$form" :resolver :initial-values="form" class="dialog-content" @submit="adicionarMaquina">
+            <div>
+                <IftaLabel>
+                    <label for="nome">Nome</label>
 
-            <Button label="Salvar" icon="pi pi-check" @click="adicionarMaquina()" />
-        </form>
+                    <InputText input-id="nome" name="nome" v-model="form.nome" fluid />
+                </IftaLabel>
+
+                <Message
+                    v-if="$form.nome?.invalid"
+                    severity="error"
+                    size="small"
+                    variant="simple"
+                    style="margin-top: 3px;"
+                >
+                    {{ $form.nome.error?.message }}
+                </Message>
+            </div>
+
+            <IftaLabel>
+                <label for="descricao">{{ `Descrição (máx. ${maxCaracteresDescricao})` }}</label>
+
+                <Textarea
+                    input-id="descricao"
+                    name="descricao"
+                    auto-resize
+                    fluid
+                    :maxlength="maxCaracteresDescricao"
+                    v-model="form.descricao"
+                />
+            </IftaLabel>
+
+            <Button label="Salvar" type="submit" icon="pi pi-check" />
+        </Form>
     </Dialog>
 </template>
 
