@@ -19,7 +19,6 @@ dayjs.extend(isSameOrBefore);
 const toast = useToast();
 
 const props = defineProps(['maquinas' , 'horariosDisponiveis']);
-const emit = defineEmits(['recarregarMaquinas']);
 
 const tarefas = ref([]);
 
@@ -81,8 +80,6 @@ const getTarefas = async () => {
     try {
         const resp = await api.get('/tarefas');
 
-        console.log(resp);
-
         tarefas.value = resp.data;
     } catch (e) {
         toast.add({
@@ -123,6 +120,10 @@ const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
             fim: novaDataFim.format('YYYY-MM-DD HH:mm:ss'),
             id_maquina: idMaquina
         });
+
+        loading.value = false;
+
+        getTarefas();
     } catch (e) {
         loading.value = false;
 
@@ -131,21 +132,11 @@ const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
         } else {
             toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
         }
-
-        return;
     }
-
-    loading.value = false;
-
-    recarregarMaquinas();
 }
 
 const adicionarTarefa = () => {
     adicionarTarefaDialog.value.openDialog();
-}
-
-const recarregarMaquinas = () => {
-    emit('recarregarMaquinas');
 }
 
 const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
@@ -178,7 +169,7 @@ const getLeftByIndex = (index) => {
 <template>
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
-    <AdicionarTarefa ref="adicionarTarefaDialog" @recarregar-tarefas="recarregarMaquinas()" />
+    <AdicionarTarefa ref="adicionarTarefaDialog" @recarregar-tarefas="getTarefas()" />
 
     <header>
         <h1>Tarefas</h1>
@@ -241,7 +232,7 @@ const getLeftByIndex = (index) => {
             :horas-exibidas="horasExibidas"
             :horarios-disponiveis="props.horariosDisponiveis"
             @reposicionar="(data) => reposicionarTarefa(data)"
-            @recarregar="recarregarMaquinas()"
+            @recarregar="getTarefas()"
         />
     </div>
 </template>
