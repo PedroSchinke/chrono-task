@@ -7,6 +7,7 @@ use App\Http\Helpers\DateHelper;
 use App\Models\ColaboradorTarefa;
 use App\Models\MaquinaTarefa;
 use App\Models\Tarefa;
+use Carbon\Carbon;
 
 class TarefaService
 {
@@ -57,6 +58,8 @@ class TarefaService
             'inicio' => $inicio,
             'fim' => $fim,
             'cor' => $params['cor'],
+            'created_at' => Carbon::now('America/Sao_Paulo'),
+            'updated_at' => Carbon::now('America/Sao_Paulo')
         ]);
 
         if (!empty($colaboradores)) {

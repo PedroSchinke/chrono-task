@@ -9,7 +9,7 @@ class Maquina extends Model
     protected $table = 'maquinas';
     protected $primaryKey = 'id';
     protected $fillable = ['nome', 'descricao'];
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function tarefas()
     {

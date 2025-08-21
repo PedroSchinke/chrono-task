@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Colaborador;
 use App\Models\Maquina;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -74,7 +75,9 @@ class ColaboradorController extends Controller
             'sobrenome' => $request->get('sobrenome'),
             'nome_completo' => $request->get('primeiro_nome') . ' ' . $request->get('sobrenome'),
             'cpf' => $request->get('cpf'),
-            'email' => $request->get('email')
+            'email' => $request->get('email'),
+            'created_at' => Carbon::now('America/Sao_paulo'),
+            'updated_at' => Carbon::now('America/Sao_paulo')
         ]);
 
         return response()->json(['message' => 'Colaborador adicionado com sucesso!'], 201);

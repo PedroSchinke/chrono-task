@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Helpers\DateHelper;
 use App\Models\Maquina;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -42,6 +42,8 @@ class MaquinaController extends Controller
             $sortOrder = $request->get('sort_order');
         }
 
+        $query->with(['tarefas']);
+
         $query->orderBy($sortField, $sortOrder);
 
         return response()->json(['data' => $query->paginate($request->get('per_page', 50))]);
@@ -69,7 +71,9 @@ class MaquinaController extends Controller
 
         Maquina::create([
             'nome' => $request->get('nome'),
-            'descricao' => $request->get('descricao', '')
+            'descricao' => $request->get('descricao', ''),
+            'created_at' => Carbon::now('America/Sao_Paulo'),
+            'updated_at' => Carbon::now('America/Sao_Paulo')
         ]);
 
         return response()->json(['mensagem' => 'Máquina criada com sucesso!'], 201);
