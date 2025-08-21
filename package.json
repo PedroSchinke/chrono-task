@@ -21,6 +21,7 @@
         "@primeuix/themes": "^1.1.2",
         "@primevue/forms": "^4.3.7",
         "dayjs": "^1.11.13",
+        "pinia": "^3.0.3",
         "primeicons": "^7.0.0",
         "primevue": "^4.3.5",
         "vue": "^3.5.17",
