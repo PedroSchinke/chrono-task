@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useTarefasStore } from "@/stores/tarefas.js";
+import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from "primevue/usetoast";
 import { getDates } from "@/helpers/getDates.js";
 import { getDiaSemana } from "@/helpers/getDiaSemana.js";
@@ -13,7 +14,6 @@ import Button from "primevue/button";
 import Divider from 'primevue/divider';
 import AdicionarTarefa from "./AdicionarTarefa.vue";
 import LinhaGantt from './LinhaGantt.vue';
-import ModalLoading from "@/components/ModalLoading.vue";
 
 dayjs.extend(isSameOrBefore);
 
@@ -66,8 +66,7 @@ const horasExibidas = ['00h', '06h', '12h', '18h'];
 const larguraDiaPx = 200;
 const alturaTarefaPx = 60;
 
-const loading = ref(false);
-const loadingMessage = ref('Carregando...');
+const loading = useLoadingStore();
 
 const dias = computed(() => {
     return getDates(dayjs().startOf('day'), dayjs().add(qtdDiasExibidos.value.dias, 'day'));
@@ -94,8 +93,7 @@ const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
     try {
         //validarHorarios(tarefa, diasReposicionamento, idMaquina);
 
-        loading.value = true;
-        loadingMessage.value = 'Reposicionando Tarefa...';
+        loading.show('Reposicionando Tarefa...');
 
         await api.post(`/tarefa/${tarefa.id}/reposicionar`, {
             inicio: novaDataInicio.format('YYYY-MM-DD HH:mm:ss'),
@@ -103,11 +101,11 @@ const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
             id_maquina: idMaquina
         });
 
-        loading.value = false;
+        loading.hide();
 
         tarefasStore.getTarefas();
     } catch (e) {
-        loading.value = false;
+        loading.hide();
 
         if (e instanceof HorarioIndisponivelError) {
             toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
@@ -149,8 +147,6 @@ const getLeftByIndex = (index) => {
 </script>
 
 <template>
-    <ModalLoading :is-loading="loading" :message="loadingMessage" />
-
     <AdicionarTarefa ref="adicionarTarefaDialog" @recarregar-tarefas="tarefasStore.getTarefas()" />
 
     <header>

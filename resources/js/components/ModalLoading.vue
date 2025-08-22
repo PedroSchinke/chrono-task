@@ -1,19 +1,20 @@
 <script setup>
+import { useLoadingStore } from "@/stores/loading.js";
 import ProgressSpinner from "primevue/progressspinner";
 
-defineProps(['isLoading', 'message']);
+const loading = useLoadingStore();
 </script>
 
 <template>
     <transition>
-        <div v-if="isLoading" class="modal-mask">
-                <div class="modal-container">
-                    <ProgressSpinner stroke-width="3" />
+        <div v-if="loading.ativo" class="modal-mask">
+            <div class="modal-container">
+                <ProgressSpinner stroke-width="3" />
 
-                    <h2 style="color: white; white-space: nowrap">
-                        <slot>{{ message }}</slot>
-                    </h2>
-                </div>
+                <h2 style="color: white; white-space: nowrap">
+                    <slot>{{ loading.message }}</slot>
+                </h2>
+            </div>
         </div>
     </transition>
 </template>
@@ -34,7 +35,7 @@ defineProps(['isLoading', 'message']);
 
 .modal-container {
     width: 100px;
-    margin: 0px auto;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;

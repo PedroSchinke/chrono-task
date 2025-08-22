@@ -1,5 +1,6 @@
 <script setup>
 import { reactive, ref, watch } from "vue";
+import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from 'primevue/usetoast';
 import { Form } from "@primevue/forms";
 import api from '@/axios';
@@ -15,7 +16,6 @@ import DatePicker from 'primevue/datepicker';
 import Fieldset from "primevue/fieldset";
 import Chip from "primevue/chip";
 import Button from "primevue/button";
-import ModalLoading from "@/components/ModalLoading.vue";
 import SelectColaboradores from "@/pages/home/components/SelectColaboradores.vue";
 import SelectMaquinas from "@/pages/home/components/SelectMaquinas.vue";
 
@@ -35,8 +35,7 @@ const form = reactive({
     cor: 'ff0000'
 });
 
-const loading = ref(false);
-const loadingMessage = ref('Adicionando Tarefa...');
+const loading = useLoadingStore();
 
 const selectColaboradores = ref(null);
 const selectMaquinas = ref(null);
@@ -72,7 +71,7 @@ const adicionarTarefa = async ({ valid }) => {
         return;
     }
 
-    loading.value = true;
+    loading.show('Adicionando Tarefa...');
 
     const params = {
         titulo: form.titulo,
@@ -87,7 +86,7 @@ const adicionarTarefa = async ({ valid }) => {
     try {
         const resp = await api.post('/tarefa', params);
 
-        loading.value = false;
+        loading.hide();
 
         toast.add({
             severity: 'success',
@@ -100,8 +99,7 @@ const adicionarTarefa = async ({ valid }) => {
 
         closeDialog();
     } catch (e) {
-        console.log(e);
-        loading.value = false;
+        loading.hide();
 
         if (e.response.status === 500) {
             toast.add({
@@ -213,8 +211,6 @@ defineExpose({ openDialog, closeDialog });
 </script>
 
 <template>
-    <ModalLoading :is-loading="loading" :message="loadingMessage" />
-
     <SelectColaboradores ref="selectColaboradores" @on-select="(colaboradores) => adicionarColaboradores(colaboradores)" />
 
     <SelectMaquinas ref="selectMaquinas" @on-select="(maquinas) => adicionarMaquinas(maquinas)" />

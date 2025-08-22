@@ -6,6 +6,7 @@ import ConfirmDialog from "primevue/confirmdialog";
 import GraficoGantt from "./components/GraficoGantt.vue";
 import Maquinas from "./components/Maquinas.vue";
 import Colaboradores from "@/pages/home/components/Colaboradores.vue";
+import ModalLoading from "@/components/ModalLoading.vue";
 
 const tarefasStore = useTarefasStore();
 
@@ -18,6 +19,8 @@ onMounted(() => {
     <Toast />
 
     <ConfirmDialog />
+
+    <ModalLoading />
 
     <main class="main">
         <GraficoGantt />

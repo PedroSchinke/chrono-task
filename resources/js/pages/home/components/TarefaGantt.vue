@@ -1,25 +1,15 @@
 <script setup>
 import { ref, computed, reactive } from 'vue';
 import { useTarefasStore } from "@/stores/tarefas.js";
+import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { getDates } from "@/helpers/getDates.js";
 import { getDiaSemana } from "@/helpers/getDiaSemana.js";
 import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
-import { Form } from '@primevue/forms';
 import dayjs from "dayjs";
 import api from "@/axios.js";
-import IftaLabel from "primevue/iftalabel";
-import InputText from "primevue/inputtext";
-import Popover from 'primevue/popover';
-import Button from 'primevue/button';
-import ColorPicker from 'primevue/colorpicker';
-import DatePicker from "primevue/datepicker";
-import Chip from 'primevue/chip';
-import ModalLoading from "@/components/ModalLoading.vue";
-import Message from "primevue/message";
-import SelectColaboradores from "@/pages/home/components/SelectColaboradores.vue";
-import SelectMaquinas from "@/pages/home/components/SelectMaquinas.vue";
+import TarefaPopover from "@/pages/home/components/TarefaPopover.vue";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -41,8 +31,7 @@ const tarefaLocal = computed(() => {
 
 const tarefasStore = useTarefasStore();
 
-const loading = ref(false);
-const loadingMessage = ref('Carregando...');
+const loading = useLoadingStore();
 
 const popoverForm = reactive({
     titulo: props.tarefa.titulo,
@@ -54,11 +43,8 @@ const popoverForm = reactive({
     cor: props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor
 });
 
-const selectColaboradores = ref(null);
-const selectMaquinas = ref(null);
-
 const tarefaPopover = ref();
-const isPopoverDismissable = ref(true);
+
 const blocoFoiArrastado = ref(false);
 
 const dragging = ref(false);
@@ -119,28 +105,6 @@ const divisions = computed(() => {
 
     return { divisores, divisionPx, divisionHours, divisionMinutes }
 });
-
-const resolver = ({ values }) => {
-    const errors = {};
-
-    if (!values.titulo) {
-        errors.titulo = [{ message: 'Título é obrigatório.' }];
-    }
-
-    if (!values.inicio) {
-        errors.inicio = [{ message: 'Início é obrigatório.' }];
-    }
-
-    if (!values.fim) {
-        errors.fim = [{ message: 'Fim é obrigatório.' }];
-    }
-
-    if (values.inicio > values.fim) {
-        errors.fim = [{ message: 'Data do fim precisa ser posterior à data de início.' }];
-    }
-
-    return { values, errors };
-}
 
 function fracaoDoDia(data) {
     const date = new Date(data);
@@ -218,7 +182,7 @@ const stopResize = async () => {
             tarefaLocal.value.fim = novoFim;
         }
 
-        loading.value = true;
+        loading.show('Reposicionando Tarefa...');
 
         const params = {
             inicio: tarefaLocal.value.inicio,
@@ -228,6 +192,8 @@ const stopResize = async () => {
 
         await api.post(`/tarefa/${tarefaLocal.value.id}/reposicionar`, params);
 
+        loading.hide();
+
         tarefasStore.getTarefas();
     } catch (e) {
         if (e instanceof HorarioIndisponivelError) {
@@ -236,7 +202,7 @@ const stopResize = async () => {
             toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
         }
     } finally {
-        loading.value = false;
+        loading.hide();
     }
 }
 
@@ -286,78 +252,6 @@ const stopDrag = () => {
     emit('reposicionar', { tarefa: props.tarefa, deslocamentoX, deslocamentoY });
 }
 
-const salvarAlteracoesTarefa = async () => {
-    loadingMessage.value = 'Salvando Alterações...';
-    loading.value = true;
-
-    try {
-        validarHorarios();
-
-        const params = {
-            titulo: popoverForm.titulo,
-            descricao: popoverForm.descricao,
-            inicio: popoverForm.inicio,
-            fim: popoverForm.fim,
-            colaboradores: popoverForm.colaboradores,
-            maquinas: popoverForm.maquinas,
-            cor: popoverForm.cor
-        }
-
-        await api.post(`/tarefa/${tarefaLocal.value.id}`, params);
-
-        loading.value = false;
-
-        toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa editada com sucesso', life: 3000 });
-
-        tarefasStore.getTarefas();
-    } catch (e) {
-        loading.value = false;
-
-        if (e instanceof HorarioIndisponivelError) {
-            toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
-        } else {
-            toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
-        }
-    }
-}
-
-const confirmarExclusaoTarefa = async () => {
-    confirm.require({
-        header: 'Confirmação',
-        message: `Tem certeza que deseja excluir a tarefa "${props.tarefa.titulo}"?`,
-        rejectProps: {
-            label: 'Não',
-            severity: 'secondary',
-            outlined: true
-        },
-        acceptProps: {
-            label: 'Sim'
-        },
-        accept: () => {
-            excluirTarefa();
-        }
-    });
-}
-
-const excluirTarefa = async () => {
-    loadingMessage.value = 'Excluindo Tarefa...';
-    loading.value = true;
-
-    try {
-        await api.post(`/tarefa/deletar/${props.tarefa.id}`);
-
-        loading.value = false;
-
-        toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa excluída com sucesso', life: 3000 });
-
-        tarefasStore.getTarefas();
-    } catch (e) {
-        loading.value = false;
-
-        toast.add({ severity: 'error', summary: 'Erro', detail: e.response.data.message, life: 3000 });
-    }
-}
-
 const validarHorarios = () => {
     const horariosDisponiveisDaMaquina = props.horariosDisponiveis.filter((horario) => {
         return horario.id_maquina == popoverForm.maquina.id;
@@ -383,64 +277,6 @@ const validarHorarios = () => {
     });
 }
 
-const adicionarColaboradores = ({ values }) => {
-    isPopoverDismissable.value = true;
-
-    values.forEach((value) => {
-        const colaboradorJaSelecionado = popoverForm.colaboradores.some((colaborador) => {
-            return colaborador.id === value.id;
-        });
-
-        if (colaboradorJaSelecionado) {
-            toast.add({
-                summary: 'Atenção',
-                detail: `${value.nome_completo} já está selecionado`,
-                severity: 'warn',
-                life: 3000
-            });
-
-            return;
-        }
-
-        popoverForm.colaboradores.push(value);
-    });
-}
-
-const removerColaborador = (colaboradorId) => {
-    popoverForm.colaboradores = popoverForm.colaboradores.filter((colaborador) => {
-        return colaborador.id !== colaboradorId;
-    });
-}
-
-const adicionarMaquinas = ({ values }) => {
-    isPopoverDismissable.value = true;
-
-    values.forEach((value) => {
-        const maquinaJaSelecionada = popoverForm.maquinas.some((maquina) => {
-            return maquina.id === value.id;
-        });
-
-        if (maquinaJaSelecionada) {
-            toast.add({
-                summary: 'Atenção',
-                detail: `${value.nome} já está selecionado(a)`,
-                severity: 'warn',
-                life: 3000
-            });
-
-            return;
-        }
-
-        popoverForm.maquinas.push(value);
-    });
-}
-
-const removerMaquina = (maquinaId) => {
-    popoverForm.maquinas = popoverForm.maquinas.filter((maquina) => {
-        return maquina.id !== maquinaId;
-    });
-}
-
 const toggle = (event) => {
     if (!blocoFoiArrastado.value) {
         tarefaPopover.value.toggle(event);
@@ -456,32 +292,10 @@ const resetarDados = () => {
     popoverForm.fim = new Date(props.tarefa.fim);
     popoverForm.cor = props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor;
 }
-
-const openSelectColaboradores = () => {
-    isPopoverDismissable.value = false;
-    selectColaboradores.value.openDialog();
-}
-
-const openSelectMaquinas = () => {
-    isPopoverDismissable.value = false;
-    selectMaquinas.value.openDialog();
-}
 </script>
 
 <template>
-    <ModalLoading :is-loading="loading" :message="loadingMessage" />
-
-    <SelectColaboradores
-        ref="selectColaboradores"
-        @on-select="(colaboradores) => adicionarColaboradores(colaboradores)"
-        @on-close="isPopoverDismissable = true"
-    />
-
-    <SelectMaquinas
-        ref="selectMaquinas"
-        @on-select="(maquinas) => adicionarMaquinas(maquinas)"
-        @on-close="isPopoverDismissable = true"
-    />
+    <TarefaPopover ref="tarefaPopover" />
 
     <div
         :id="`tarefa-${tarefaLocal.id}`"
@@ -496,167 +310,6 @@ const openSelectMaquinas = () => {
 
         <div class="resize-handle right" @mousedown="startResize('end', $event)"></div>
     </div>
-
-    <Popover ref="tarefaPopover" :dismissable="isPopoverDismissable" @hide="resetarDados()" @show="resetarDados()">
-        <Form
-            v-slot="$form"
-            :initial-values="popoverForm"
-            :resolver
-            class="popover-form"
-            @submit="salvarAlteracoesTarefa"
-        >
-            <div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <IftaLabel style="width: 100%;">
-                        <label for="titulo">Título</label>
-
-                        <InputText v-model="popoverForm.titulo" id="titulo" name="titulo" fluid />
-                    </IftaLabel>
-
-                    <ColorPicker
-                        v-model="popoverForm.cor"
-                        title="Selecionar Cor"
-                        input-id="cor"
-                        name="cor"
-                        format="hex"
-                    />
-                </div>
-
-                <Message
-                    v-if="$form.titulo?.invalid"
-                    severity="error"
-                    size="small"
-                    variant="simple"
-                    class="input-message"
-                    style="margin-top: 3px;"
-                >
-                    {{ $form.titulo.error?.message }}
-                </Message>
-            </div>
-
-            <div class="popover-info">
-                <IftaLabel style="width: 100%;">
-                    <label for="descricao">Descrição</label>
-
-                    <InputText v-model="popoverForm.descricao" id="descricao" name="descricao" fluid />
-                </IftaLabel>
-            </div>
-
-            <div class="popover-info">
-                <IftaLabel style="width: 100%;">
-                    <label for="inicio">Início</label>
-
-                    <DatePicker
-                        v-model="popoverForm.inicio"
-                        placeholder="Início da tarefa"
-                        :manualInput="false"
-                        :step-minute="5"
-                        input-id="inicio"
-                        name="inicio"
-                        date-format="dd/mm/yy"
-                        show-icon
-                        show-time
-                    />
-                </IftaLabel>
-
-                <Message v-if="$form.inicio?.invalid" severity="error" size="small" variant="simple" class="input-message">
-                    {{ $form.inicio.error?.message }}
-                </Message>
-            </div>
-
-            <div class="popover-info">
-                <IftaLabel style="width: 100%;">
-                    <label for="fim">Fim</label>
-
-                    <DatePicker
-                        v-model="popoverForm.fim"
-                        placeholder="Início da tarefa"
-                        :manualInput="false"
-                        :step-minute="5"
-                        :min-date="new Date(dayjs($form.inicio).add(5, 'minute'))"
-                        input-id="fim"
-                        name="fim"
-                        date-format="dd/mm/yy"
-                        show-icon
-                        show-time
-                    />
-                </IftaLabel>
-
-                <Message v-if="$form.fim?.invalid" severity="error" size="small" variant="simple" class="input-message">
-                    {{ $form.fim.error?.message }}
-                </Message>
-            </div>
-
-            <div class="popover-info">
-                <div style="display: flex; align-items: center; gap: 3px;">
-                    <span style="font-weight: bold;">Colaboradores</span>
-
-                    <Button
-                        title="Adicionar Colaboradores"
-                        icon="pi pi-plus"
-                        rounded
-                        variant="text"
-                        size="small"
-                        @click="openSelectColaboradores()"
-                    />
-                </div>
-
-                <Chip
-                    v-for="colaborador in popoverForm.colaboradores"
-                    :key="colaborador.id"
-                    removable
-                    @remove="removerColaborador(colaborador.id)"
-                >
-                    {{ colaborador.nome_completo }}
-                </Chip>
-
-                <p v-if="popoverForm.colaboradores.length === 0" class="empty-message">
-                    Sem colaboradores
-                </p>
-            </div>
-
-            <div class="popover-info">
-                <div style="display: flex; align-items: center; gap: 3px;">
-                    <span style="font-weight: bold;">Máquinas</span>
-
-                    <Button
-                        title="Adicionar Máquinas"
-                        icon="pi pi-plus"
-                        rounded
-                        variant="text"
-                        size="small"
-                        @click="openSelectMaquinas()"
-                    />
-                </div>
-
-                <Chip
-                    v-for="maquina in popoverForm.maquinas"
-                    :key="maquina.id"
-                    removable
-                    @remove="removerMaquina(maquina.id)"
-                >
-                    {{ maquina.nome }}
-                </Chip>
-
-                <p v-if="popoverForm.maquinas.length === 0" class="empty-message">
-                    Sem máquinas
-                </p>
-            </div>
-
-            <div class="button-container">
-                <Button label="Salvar" type="submit" rounded />
-
-                <Button
-                    title="Excluir Tarefa"
-                    icon="pi pi-trash"
-                    severity="danger"
-                    variant="text"
-                    rounded
-                    @click="confirmarExclusaoTarefa()"
-                />
-            </div>
-        </Form>
-    </Popover>
 </template>
 
 <style scoped>

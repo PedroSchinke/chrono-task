@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive } from "vue";
+import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from 'primevue/usetoast';
 import { Form } from '@primevue/forms';
 import api from '@/axios';
@@ -8,7 +9,6 @@ import IftaLabel from "primevue/iftalabel";
 import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
 import Button from "primevue/button";
-import ModalLoading from "@/components/ModalLoading.vue";
 import Message from "primevue/message";
 
 const emits = defineEmits(['recarregar-maquinas']);
@@ -20,8 +20,7 @@ const form = reactive({
     descricao: ''
 });
 
-const loading = ref(false);
-const loadingMessage = ref('Adicionando Máquina...');
+const loading = useLoadingStore();
 
 const maxCaracteresDescricao = 200;
 
@@ -42,12 +41,12 @@ const adicionarMaquina = async ({ valid }) => {
         return;
     }
 
-    loading.value = true;
+    loading.show('Adicionando Máquina...');
 
     try {
         const resp = await api.post('/maquina', form);
 
-        loading.value = false;
+        loading.hide();
 
         toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Máquina adicionada com sucesso', life: 3000 });
 
@@ -55,7 +54,7 @@ const adicionarMaquina = async ({ valid }) => {
 
         closeDialog();
     } catch (e) {
-        loading.value = false;
+        loading.hide();
 
         toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível adicionar máquina', life: 3000 });
     }
@@ -82,8 +81,6 @@ defineExpose({ openDialog, closeDialog });
 </script>
 
 <template>
-    <ModalLoading :is-loading="loading" :message="loadingMessage" />
-
     <Dialog header="Adicionar Máquina" v-model:visible="dialogVisible">
         <Form v-slot="$form" :resolver :initial-values="form" class="dialog-content" @submit="adicionarMaquina">
             <div>

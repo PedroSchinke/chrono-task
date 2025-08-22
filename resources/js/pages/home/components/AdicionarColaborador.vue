@@ -1,23 +1,22 @@
 <script setup>
 import { reactive, ref } from "vue";
+import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from 'primevue/usetoast';
 import { isValidEmail, normalizeCpf } from "@/helpers/stringHelper.js";
 import { Form } from "@primevue/forms";
+import api from "@/axios.js";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import InputMask from "primevue/inputmask";
 import IftaLabel from "primevue/iftalabel";
 import Button from "primevue/button";
-import api from "@/axios.js";
-import ModalLoading from "@/components/ModalLoading.vue";
 
 const emits = defineEmits(['recarregar-colaboradores']);
 
 const dialogVisible = ref(false);
 
-const loading = ref(false);
-const loadingMessage = ref('Adicionando Colaborador...');
+const loading = useLoadingStore();
 
 const form = reactive({
     primeiro_nome: '',
@@ -65,7 +64,7 @@ const adicionarColaborador = async ({ valid, values }) => {
         return;
     }
 
-    loading.value = true;
+    loading.show('Adicionando Colaborador...');
 
     const params = {
         primeiro_nome: values.primeiro_nome,
@@ -76,8 +75,21 @@ const adicionarColaborador = async ({ valid, values }) => {
 
     try {
         await api.post('/colaboradores', params);
+
+        loading.hide();
+
+        toast.add({
+            summary: 'Sucesso!',
+            detail: 'Colaborador adicionado com sucesso',
+            severity: 'success',
+            life: 3000
+        });
+
+        emits('recarregar-colaboradores');
+
+        closeDialog();
     } catch (e) {
-        loading.value = false;
+        loading.hide();
 
         toast.add({
             severity: 'error',
@@ -85,17 +97,7 @@ const adicionarColaborador = async ({ valid, values }) => {
             detail: 'Não foi possível adicionar colaborador.',
             life: 4000
         });
-
-        return;
     }
-
-    loading.value = false;
-
-    toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Colaborador adicionado com sucesso', life: 3000 });
-
-    emits('recarregar-colaboradores');
-
-    closeDialog();
 }
 
 const resetForm = () => {
@@ -121,8 +123,6 @@ defineExpose({ openDialog, closeDialog });
 </script>
 
 <template>
-    <ModalLoading :is-loading="loading" :message="loadingMessage" />
-
     <Dialog header="Adicionar Colaborador" v-model:visible="dialogVisible">
         <Form v-slot="$form" :initial-values="form" :resolver class="dialog-content" @submit="adicionarColaborador">
             <IftaLabel>
