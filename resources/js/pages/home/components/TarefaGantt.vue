@@ -326,12 +326,12 @@ const confirmarExclusaoTarefa = async () => {
         header: 'Confirmação',
         message: `Tem certeza que deseja excluir a tarefa "${props.tarefa.titulo}"?`,
         rejectProps: {
-            label: 'Não, cancelar',
+            label: 'Não',
             severity: 'secondary',
             outlined: true
         },
         acceptProps: {
-            label: 'Sim, excluir'
+            label: 'Sim'
         },
         accept: () => {
             excluirTarefa();
@@ -349,6 +349,8 @@ const excluirTarefa = async () => {
         loading.value = false;
 
         toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa excluída com sucesso', life: 3000 });
+
+        tarefasStore.getTarefas();
     } catch (e) {
         loading.value = false;
 
