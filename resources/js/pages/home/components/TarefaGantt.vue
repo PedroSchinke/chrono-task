@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue';
+import { ref, computed, reactive } from 'vue';
+import { useTarefasStore } from "@/stores/tarefas.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { getDates } from "@/helpers/getDates.js";
@@ -32,11 +33,13 @@ const props = defineProps([
     'maquina',
     'horariosDisponiveis'
 ]);
-const emit = defineEmits(['reposicionar', 'recarregar']);
+const emit = defineEmits(['reposicionar']);
 
 const tarefaLocal = computed(() => {
     return { ...props.tarefa };
 });
+
+const tarefasStore = useTarefasStore();
 
 const loading = ref(false);
 const loadingMessage = ref('Carregando...');
@@ -225,7 +228,7 @@ const stopResize = async () => {
 
         await api.post(`/tarefa/${tarefaLocal.value.id}/reposicionar`, params);
 
-        emit('recarregar');
+        tarefasStore.getTarefas();
     } catch (e) {
         if (e instanceof HorarioIndisponivelError) {
             toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
@@ -301,6 +304,12 @@ const salvarAlteracoesTarefa = async () => {
         }
 
         await api.post(`/tarefa/${tarefaLocal.value.id}`, params);
+
+        loading.value = false;
+
+        toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa editada com sucesso', life: 3000 });
+
+        tarefasStore.getTarefas();
     } catch (e) {
         loading.value = false;
 
@@ -309,15 +318,7 @@ const salvarAlteracoesTarefa = async () => {
         } else {
             toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
         }
-
-        return;
     }
-
-    loading.value = false;
-
-    toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa editada com sucesso', life: 3000 });
-
-    emit('recarregar');
 }
 
 const confirmarExclusaoTarefa = async () => {

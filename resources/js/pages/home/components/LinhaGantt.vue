@@ -2,14 +2,10 @@
 import TarefaGantt from "@/pages/home/components/TarefaGantt.vue";
 
 const props = defineProps(['tarefa', 'dias', 'larguraDiaPx', 'alturaTarefaPx', 'horasExibidas', 'horariosDisponiveis']);
-const emit = defineEmits(['reposicionar', 'recarregar']);
+const emit = defineEmits(['reposicionar']);
 
 const reposicionarTarefa = (data) => {
     emit('reposicionar', data);
-}
-
-const recarregar = () => {
-    emit('recarregar');
 }
 </script>
 
@@ -30,7 +26,6 @@ const recarregar = () => {
                 :horas-exibidas="props.horasExibidas"
                 :horarios-disponiveis="props.horariosDisponiveis"
                 @reposicionar="(data) => reposicionarTarefa(data)"
-                @recarregar="recarregar()"
             />
         </div>
     </div>

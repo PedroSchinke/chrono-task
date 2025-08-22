@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
+import { useTarefasStore } from "@/stores/tarefas.js";
 import { useToast } from "primevue/usetoast";
 import { getDates } from "@/helpers/getDates.js";
 import { getDiaSemana } from "@/helpers/getDiaSemana.js";
@@ -20,7 +21,7 @@ const toast = useToast();
 
 const props = defineProps(['maquinas' , 'horariosDisponiveis']);
 
-const tarefas = ref([]);
+const tarefasStore = useTarefasStore();
 
 const adicionarTarefaDialog = ref(null);
 
@@ -72,25 +73,6 @@ const dias = computed(() => {
     return getDates(dayjs().startOf('day'), dayjs().add(qtdDiasExibidos.value.dias, 'day'));
 });
 
-onMounted(() => {
-    getTarefas();
-});
-
-const getTarefas = async () => {
-    try {
-        const resp = await api.get('/tarefas');
-
-        tarefas.value = resp.data;
-    } catch (e) {
-        toast.add({
-            summary: 'Algo deu errado...',
-            detail: 'Não foi possível carregar tarefas.',
-            severity: 'error',
-            life: 3000
-        });
-    }
-}
-
 const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
     let idMaquina = tarefa.id_maquina;
 
@@ -123,7 +105,7 @@ const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
 
         loading.value = false;
 
-        getTarefas();
+        tarefasStore.getTarefas();
     } catch (e) {
         loading.value = false;
 
@@ -169,7 +151,7 @@ const getLeftByIndex = (index) => {
 <template>
     <ModalLoading :is-loading="loading" :message="loadingMessage" />
 
-    <AdicionarTarefa ref="adicionarTarefaDialog" @recarregar-tarefas="getTarefas()" />
+    <AdicionarTarefa ref="adicionarTarefaDialog" @recarregar-tarefas="tarefasStore.getTarefas()" />
 
     <header>
         <h1>Tarefas</h1>
@@ -223,7 +205,7 @@ const getLeftByIndex = (index) => {
         </div>
 
         <LinhaGantt
-            v-for="tarefa in tarefas"
+            v-for="tarefa in tarefasStore.data"
             :key="tarefa.id"
             :tarefa="tarefa"
             :dias="dias"
@@ -232,7 +214,6 @@ const getLeftByIndex = (index) => {
             :horas-exibidas="horasExibidas"
             :horarios-disponiveis="props.horariosDisponiveis"
             @reposicionar="(data) => reposicionarTarefa(data)"
-            @recarregar="getTarefas()"
         />
     </div>
 </template>
