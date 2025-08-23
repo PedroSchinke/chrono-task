@@ -33,16 +33,6 @@ const tarefasStore = useTarefasStore();
 
 const loading = useLoadingStore();
 
-const popoverForm = reactive({
-    titulo: props.tarefa.titulo,
-    descricao: props.tarefa.descricao,
-    inicio: new Date(props.tarefa.inicio),
-    fim: new Date(props.tarefa.fim),
-    colaboradores: props.tarefa.colaboradores,
-    maquinas: props.tarefa.maquinas,
-    cor: props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor
-});
-
 const tarefaPopover = ref();
 
 const blocoFoiArrastado = ref(false);
@@ -282,20 +272,10 @@ const toggle = (event) => {
         tarefaPopover.value.toggle(event);
     }
 }
-
-const resetarDados = () => {
-    popoverForm.titulo = props.tarefa.titulo;
-    popoverForm.descricao = props.tarefa.descricao;
-    popoverForm.colaboradores = props.tarefa.colaboradores;
-    popoverForm.maquinas = props.tarefa.maquinas;
-    popoverForm.inicio = new Date(props.tarefa.inicio);
-    popoverForm.fim = new Date(props.tarefa.fim);
-    popoverForm.cor = props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor;
-}
 </script>
 
 <template>
-    <TarefaPopover ref="tarefaPopover" />
+    <TarefaPopover ref="tarefaPopover" :tarefa="props.tarefa" />
 
     <div
         :id="`tarefa-${tarefaLocal.id}`"
@@ -356,32 +336,6 @@ const resetarDados = () => {
     font-weight: 600;
     text-align: center;
     white-space: break-spaces;
-}
-
-.popover-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.popover-info {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.empty-message {
-    margin: 3px;
-    color: #bbb;
-    font-style: italic;
-}
-
-.button-container {
-    width: 100%;
-    margin-top: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 :deep(.p-chip) {
