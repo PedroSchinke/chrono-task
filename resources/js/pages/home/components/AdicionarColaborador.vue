@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref } from "vue";
 import { useLoadingStore } from "@/stores/loading.js";
+import { useColaboradoresStore } from "@/stores/colaboradores.js";
 import { useToast } from 'primevue/usetoast';
 import { isValidEmail, normalizeCpf } from "@/helpers/stringHelper.js";
 import { Form } from "@primevue/forms";
@@ -12,9 +13,9 @@ import InputMask from "primevue/inputmask";
 import IftaLabel from "primevue/iftalabel";
 import Button from "primevue/button";
 
-const emits = defineEmits(['recarregar-colaboradores']);
-
 const dialogVisible = ref(false);
+
+const colaboradoresStore = useColaboradoresStore();
 
 const loading = useLoadingStore();
 
@@ -85,9 +86,9 @@ const adicionarColaborador = async ({ valid, values }) => {
             life: 3000
         });
 
-        emits('recarregar-colaboradores');
-
         closeDialog();
+
+        colaboradoresStore.getColaboradores();
     } catch (e) {
         loading.hide();
 

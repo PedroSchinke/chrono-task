@@ -1,45 +1,20 @@
 <script setup>
-import { onMounted, ref } from "vue";
-import { useToast } from "primevue/usetoast";
+import { ref } from "vue";
+import { useColaboradoresStore } from "@/stores/colaboradores.js";
 import DataTable from "primevue/datatable";
 import Button from "primevue/button";
 import Column from "primevue/column";
 import AdicionarColaborador from "@/pages/home/components/AdicionarColaborador.vue";
-import api from "@/axios.js";
 
-const colaboradores = ref([]);
+const colaboradoresStore = useColaboradoresStore();
 
 const loading = ref(false);
 
 const dialogAdicionarColaborador = ref(null);
 
-const toast = useToast();
-
-const getColaboradores = async () => {
-    loading.value = true;
-
-    try {
-        const resp = await api.get('/colaboradores');
-
-        colaboradores.value = resp.data.data.data;
-    } catch (e) {
-        loading.value = false;
-
-        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível carregar colaboradores', life: 3000 });
-
-        return;
-    }
-
-    loading.value = false;
-}
-
 const adicionarColaborador = () => {
     dialogAdicionarColaborador.value.openDialog();
 }
-
-onMounted(() => {
-    getColaboradores();
-});
 </script>
 
 <template>
@@ -52,7 +27,7 @@ onMounted(() => {
             <Button title="Adicionar Colaborador" icon="pi pi-plus" rounded @click="adicionarColaborador()" />
         </header>
 
-        <DataTable :value="colaboradores" :loading="loading">
+        <DataTable :value="colaboradoresStore.data.data" :loading="loading">
             <template #empty>
                 <p style="text-align: center;">Não existem colaboradores cadastrados</p>
             </template>
