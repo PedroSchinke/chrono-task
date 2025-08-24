@@ -19,6 +19,13 @@ export const useTarefasStore = defineStore('tarefas', {
                     severity: 'error'
                 });
             }
+        },
+        updateTarefa(id, values) {
+            const tarefa = this.data.find(tarefa => tarefa.id === id);
+
+            Object.entries(values).forEach(([key, value]) => {
+                tarefa[key] = value;
+            });
         }
     }
 });
