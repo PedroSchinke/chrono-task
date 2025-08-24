@@ -147,7 +147,7 @@ const getLeftByIndex = (index) => {
 </script>
 
 <template>
-    <AdicionarTarefa ref="adicionarTarefaDialog" @recarregar-tarefas="tarefasStore.getTarefas()" />
+    <AdicionarTarefa ref="adicionarTarefaDialog" />
 
     <header>
         <h1>Tarefas</h1>

@@ -1,5 +1,7 @@
 <script setup>
 import { reactive, ref, watch } from "vue";
+import { useTarefasStore } from "@/stores/tarefas.js";
+import { useColaboradoresStore } from "@/stores/colaboradores.js";
 import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from 'primevue/usetoast';
 import { Form } from "@primevue/forms";
@@ -21,8 +23,6 @@ import SelectMaquinas from "@/pages/home/components/SelectMaquinas.vue";
 
 dayjs.extend(customParseFormat);
 
-const emits = defineEmits(['recarregar-tarefas']);
-
 const dialogVisible = ref(false);
 
 const form = reactive({
@@ -35,6 +35,8 @@ const form = reactive({
     cor: 'ff0000'
 });
 
+const tarefasStore = useTarefasStore();
+const colaboradoresStore = useColaboradoresStore();
 const loading = useLoadingStore();
 
 const selectColaboradores = ref(null);
@@ -95,9 +97,10 @@ const adicionarTarefa = async ({ valid }) => {
             life: 3000
         });
 
-        emits('recarregar-tarefas');
-
         closeDialog();
+
+        tarefasStore.getTarefas();
+        colaboradoresStore.getColaboradores();
     } catch (e) {
         loading.hide();
 
