@@ -33,7 +33,7 @@ const tarefasStore = useTarefasStore();
 
 const loading = useLoadingStore();
 
-const tarefaPopover = ref();
+const tarefaPopover = ref(null);
 
 const blocoFoiArrastado = ref(false);
 
@@ -47,6 +47,8 @@ const resizing = ref(false);
 const resizeStartX = ref(0);
 const resizeDirection = ref(null);
 const resizeDiff = ref(0);
+
+const cor = ref(props.tarefa.cor);
 
 const diasEntre = (inicio, fim) => {
     return dayjs(fim).startOf('day').diff(dayjs(inicio).startOf('day'), 'day');
@@ -81,7 +83,7 @@ const blocoStyle = computed(() => {
         left: `${Math.max(0, leftPx)}px`,
         top: `${top}px`,
         width: `${widthPx}px`,
-        backgroundColor: props.tarefa.cor.startsWith('#') ? props.tarefa.cor : '#' + props.tarefa.cor,
+        backgroundColor: cor.value.startsWith('#') ? cor.value : '#' + cor.value,
         cursor: 'grab',
         position: 'absolute',
     }
@@ -275,9 +277,10 @@ const toggle = (event) => {
 </script>
 
 <template>
-    <TarefaPopover ref="tarefaPopover" :tarefa="props.tarefa" />
+    <TarefaPopover ref="tarefaPopover" :tarefa="props.tarefa" @change-color="(value) => cor = value" />
 
     <div
+        ref="blocoTarefa"
         :id="`tarefa-${tarefaLocal.id}`"
         :key="tarefaLocal.id"
         :style="blocoStyle"
@@ -336,9 +339,5 @@ const toggle = (event) => {
     font-weight: 600;
     text-align: center;
     white-space: break-spaces;
-}
-
-:deep(.p-chip) {
-    width: fit-content;
 }
 </style>

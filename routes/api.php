@@ -19,6 +19,11 @@ Route::post('/tarefa', [TarefaController::class, 'store']);
 Route::post('/tarefa/{tarefa_id}', [TarefaController::class, 'update']);
 Route::post('/tarefa/deletar/{tarefa_id}', [TarefaController::class, 'destroy']);
 Route::post('/tarefa/{tarefa_id}/reposicionar', [TarefaController::class, 'reposicionarTarefa']);
+Route::post('/tarefa/{tarefa_id}/titulo/alterar', [TarefaController::class, 'alterarTitulo']);
+Route::post('/tarefa/{tarefa_id}/descricao/alterar', [TarefaController::class, 'alterarDescricao']);
+Route::post('/tarefa/{tarefa_id}/inicio/alterar', [TarefaController::class, 'alterarInicio']);
+Route::post('/tarefa/{tarefa_id}/fim/alterar', [TarefaController::class, 'alterarFim']);
+Route::post('/tarefa/{tarefa_id}/cor/alterar', [TarefaController::class, 'alterarCor']);
 
 /**
  * Colaboradores

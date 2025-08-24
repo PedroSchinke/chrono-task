@@ -21,8 +21,11 @@ class TarefaController extends Controller
 
     /**
      * Display a listing of the resource.
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $tarefas = Tarefa::with(['colaboradores', 'maquinas'])->get();
 
@@ -39,9 +42,11 @@ class TarefaController extends Controller
 
     /**
      * Store a newly created resource in storage.
-     * @throws Exception
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
             'titulo' => 'required|string',
@@ -73,8 +78,12 @@ class TarefaController extends Controller
 
     /**
      * Update the specified resource in storage.
+     *
+     * @param Request $request
+     * @param $tarefa_id
+     * @return JsonResponse
      */
-    public function update(Request $request, $tarefa_id)
+    public function update(Request $request, $tarefa_id): JsonResponse
     {
         $tarefa = Tarefa::find($tarefa_id);
 
@@ -95,7 +104,12 @@ class TarefaController extends Controller
         return response()->json(['mensagem' => 'Tarefa movida com sucesso!'], 204);
     }
 
-    public function reposicionarTarefa(Request $request, $tarefa_id)
+    /**
+     * @param Request $request
+     * @param $tarefa_id
+     * @return JsonResponse
+     */
+    public function reposicionarTarefa(Request $request, $tarefa_id): JsonResponse
     {
         $request->validate([
             'inicio' => 'required|string',
@@ -110,10 +124,91 @@ class TarefaController extends Controller
             'id_maquina' => $request->get('id_maquina')
         ]);
 
-        return response()->json(['mensagem' => 'Tarefa movida com sucesso!'], 204);
+        return response()->json(['mensagem' => 'Tarefa movida com sucesso!']);
     }
 
-    public function alterarCor(Request $request, $tarefa_id)
+    /**
+     * @param Request $request
+     * @param $tarefa_id
+     * @return JsonResponse
+     */
+    public function alterarTitulo(Request $request, $tarefa_id): JsonResponse
+    {
+        $request->validate([
+            'titulo' => 'required|string'
+        ]);
+
+        $tarefa = Tarefa::find($tarefa_id);
+
+        $tarefa->update([
+            'titulo' => $request->get('titulo')
+        ]);
+
+        return response()->json(['mensagem' => 'Título da tarefa alterado com sucesso!']);
+    }
+
+    /**
+     * @param Request $request
+     * @param $tarefa_id
+     * @return JsonResponse
+     */
+    public function alterarDescricao(Request $request, $tarefa_id): JsonResponse
+    {
+        $tarefa = Tarefa::find($tarefa_id);
+
+        $tarefa->update([
+            'descricao' => $request->get('descricao')
+        ]);
+
+        return response()->json(['mensagem' => 'Descrição da tarefa alterada com sucesso!']);
+    }
+
+    /**
+     * @param Request $request
+     * @param $tarefa_id
+     * @return JsonResponse
+     */
+    public function alterarInicio(Request $request, $tarefa_id): JsonResponse
+    {
+        $request->validate([
+            'inicio' => 'required|date'
+        ]);
+
+        $tarefa = Tarefa::find($tarefa_id);
+
+        $tarefa->update([
+            'inicio' => DateHelper::formatarData($request->get('inicio'))
+        ]);
+
+        return response()->json(['mensagem' => 'Início da tarefa alterado com sucesso!']);
+    }
+
+    /**
+     * @param Request $request
+     * @param $tarefa_id
+     * @return JsonResponse
+     */
+    public function alterarFim(Request $request, $tarefa_id): JsonResponse
+    {
+        $request->validate([
+            'fim' => 'required|date'
+        ]);
+
+        $tarefa = Tarefa::find($tarefa_id);
+
+        $tarefa->update([
+            'fim' => DateHelper::formatarData($request->get('fim'))
+        ]);
+
+        return response()->json(['mensagem' => 'Fim da tarefa alterado com sucesso!']);
+    }
+
+    /**
+     * @param Request $request
+     * @param $tarefa_id
+     * @return JsonResponse
+     */
+    public function alterarCor(Request $request, $tarefa_id): JsonResponse
     {
         $request->validate([
             'cor' => 'required|string'
@@ -125,16 +220,18 @@ class TarefaController extends Controller
             'cor' => $request->get('cor')
         ]);
 
-        return response()->json(['mensagem' => 'Cor da tarefa alterada com sucesso!'], 204);
+        return response()->json(['mensagem' => 'Cor da tarefa alterada com sucesso!']);
     }
 
     /**
      * Remove the specified resource from storage.
      *
+     * @param Request $request
+     * @param $tarefa_id
      * @return JsonResponse
      * @throws Exception
      */
-    public function destroy(Request $request, $tarefa_id)
+    public function destroy(Request $request, $tarefa_id): JsonResponse
     {
         $tarefa = Tarefa::find($tarefa_id);
 
