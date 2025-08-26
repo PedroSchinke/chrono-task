@@ -1,22 +1,16 @@
 <script setup>
 import { ref } from "vue";
-import { useToast } from "primevue/usetoast";
 import { useMaquinasStore } from "@/stores/maquinas.js";
 import Button from "primevue/button";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import AdicionarMaquina from "./AdicionarMaquina.vue";
 
-const props = defineProps(['maquinas']);
-const emit = defineEmits(['recarregarMaquinas', 'recarregarHorariosDisponiveis']);
-
 const maquinasStore = useMaquinasStore();
 
 const loadingMaquinas = ref(false);
 
 const adicionarMaquinaDialog = ref(null);
-
-const toast = useToast();
 
 const openAdicionarMaquina = () => {
     adicionarMaquinaDialog.value.openDialog();
