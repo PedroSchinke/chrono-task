@@ -9,6 +9,10 @@ class Tarefa extends Model
     protected $table = 'tarefas';
     protected $primaryKey = 'id';
     protected $fillable = ['titulo', 'descricao', 'inicio', 'fim', 'cor'];
+    protected $casts = [
+        'inicio' => 'datetime:Y-m-d\TH:i:s',
+        'fim' => 'datetime:Y-m-d\TH:i:s',
+    ];
     public $timestamps = false;
 
     public function colaboradores()
