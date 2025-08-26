@@ -2,6 +2,7 @@
 import { onMounted } from 'vue';
 import { useTarefasStore } from '@/stores/tarefas';
 import { useColaboradoresStore } from "@/stores/colaboradores.js";
+import { useMaquinasStore } from "@/stores/maquinas.js";
 import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
 import GraficoGantt from "./components/GraficoGantt.vue";
@@ -11,10 +12,12 @@ import ModalLoading from "@/components/ModalLoading.vue";
 
 const tarefasStore = useTarefasStore();
 const colaboradoresStore = useColaboradoresStore();
+const maquinasStore = useMaquinasStore();
 
 onMounted(() => {
     tarefasStore.getTarefas();
     colaboradoresStore.getColaboradores();
+    maquinasStore.getMaquinas();
 });
 </script>
 

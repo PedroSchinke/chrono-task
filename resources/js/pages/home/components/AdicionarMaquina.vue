@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive } from "vue";
+import { useMaquinasStore } from "@/stores/maquinas.js";
 import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from 'primevue/usetoast';
 import { Form } from '@primevue/forms';
@@ -11,8 +12,6 @@ import Textarea from "primevue/textarea";
 import Button from "primevue/button";
 import Message from "primevue/message";
 
-const emits = defineEmits(['recarregar-maquinas']);
-
 const dialogVisible = ref(false);
 
 const form = reactive({
@@ -20,6 +19,7 @@ const form = reactive({
     descricao: ''
 });
 
+const maquinasStore = useMaquinasStore();
 const loading = useLoadingStore();
 
 const maxCaracteresDescricao = 200;
@@ -50,7 +50,7 @@ const adicionarMaquina = async ({ valid }) => {
 
         toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Máquina adicionada com sucesso', life: 3000 });
 
-        emits('recarregar-maquinas');
+        maquinasStore.getMaquinas();
 
         closeDialog();
     } catch (e) {
