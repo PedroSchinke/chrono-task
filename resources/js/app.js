@@ -1,6 +1,6 @@
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/inertia-vue3';
-import { createPinia } from "pinia";
+import { pinia } from "@/plugins/pinia.js";
 
 import '../css/app.css';
 import 'primeicons/primeicons.css';
@@ -27,7 +27,7 @@ createInertiaApp({
         });
         vueApp.use(ToastService);
         vueApp.use(ConfirmationService);
-        vueApp.use(createPinia());
+        vueApp.use(pinia);
         vueApp.mount(el);
     },
 });

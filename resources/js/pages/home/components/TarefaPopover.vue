@@ -2,14 +2,16 @@
 import { reactive, ref, nextTick } from 'vue';
 import { useTarefasStore } from "@/stores/tarefas.js";
 import { useLoadingStore } from "@/stores/loading.js";
-import { useColaboradoresStore } from "@/stores/colaboradores.js";
 import { Form } from "@primevue/forms";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
+import {
+    validarDisponibilidadeColaboradores,
+    validarDisponibilidadeMaquinas
+} from "@/helpers/validarDisponibilidade.js";
 import api from "@/axios.js";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
 import Popover from "primevue/popover";
 import Tabs from 'primevue/tabs';
 import TabList from 'primevue/tablist';
@@ -35,7 +37,6 @@ const props = defineProps(['tarefa']);
 const emits = defineEmits(['change-color']);
 
 const tarefasStore = useTarefasStore();
-const colaboradoresStore = useColaboradoresStore();
 const loading = useLoadingStore();
 
 const tarefaPopover = ref(null);
@@ -104,40 +105,6 @@ const hidePopover = () => {
     resetarDados();
 }
 
-const salvarAlteracoesTarefa = async () => {
-    loading.show('Salvando Alterações...');
-
-    try {
-        validarHorarios();
-
-        const params = {
-            titulo: form.titulo,
-            descricao: form.descricao,
-            inicio: form.inicio,
-            fim: form.fim,
-            colaboradores: form.colaboradores,
-            maquinas: form.maquinas,
-            cor: form.cor
-        }
-
-        await api.post(`/tarefa/${tarefaLocal.value.id}`, params);
-
-        loading.hide();
-
-        toast.add({ severity: 'success', summary: 'Sucesso!', detail: 'Tarefa editada com sucesso', life: 3000 });
-
-        tarefasStore.getTarefas();
-    } catch (e) {
-        loading.hide();
-
-        if (e instanceof HorarioIndisponivelError) {
-            toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
-        } else {
-            toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
-        }
-    }
-}
-
 const salvarDados = async (key, label, genero = 'o') => {
     hideMessage();
 
@@ -155,7 +122,7 @@ const salvarDados = async (key, label, genero = 'o') => {
         }
 
         try {
-            validarDisponibilidade();
+            validarDisponibilidade(form.inicio, form.fim);
         } catch (e) {
             toast.add({
                 summary: e.title,
@@ -198,29 +165,9 @@ const salvarDados = async (key, label, genero = 'o') => {
     }
 }
 
-const validarDisponibilidade = () => {
-    form.colaboradores.forEach((colaborador) => {
-        const colaboradorComTarefas = colaboradoresStore.data.data.find((col) => {
-            return col.id === colaborador.id;
-        });
-
-        colaboradorComTarefas.tarefas.filter((tarefa) => tarefa.id !== props.tarefa.id).forEach((tarefa) => {
-            const inicioExistente = new Date(tarefa.inicio);
-            const fimExistente = new Date(tarefa.fim);
-
-            const inicioNovo = dayjs(form.inicio);
-            const fimNovo = dayjs(form.fim);
-
-            const conflito = inicioNovo.isBefore(fimExistente, 'minute') && fimNovo.isAfter(inicioExistente, 'minute');
-
-            if (conflito) {
-                throw new HorarioIndisponivelError(
-                    'Conflito',
-                    `${colaborador.nome_completo} não está disponível para o período.`
-                );
-            }
-        })
-    });
+const validarDisponibilidade = (inicio, fim) => {
+    validarDisponibilidadeColaboradores(props.tarefa.colaboradores, inicio, fim, props.tarefa.id);
+    validarDisponibilidadeMaquinas(props.tarefa.maquinas, inicio, fim, props.tarefa.id);
 }
 
 const confirmarExclusaoTarefa = async () => {
@@ -410,7 +357,6 @@ defineExpose({ toggle });
                         :initial-values="form"
                         :resolver
                         class="popover-form"
-                        @submit="salvarAlteracoesTarefa"
                     >
                         <div>
                             <div style="display: flex; align-items: center; gap: 10px;">
