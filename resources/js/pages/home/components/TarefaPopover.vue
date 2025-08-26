@@ -81,6 +81,7 @@ const resolver = ({ values, valid }) => {
 
     if (values.inicio > values.fim) {
         errors.fim = [{ message: 'Data do fim precisa ser posterior à data de início.' }];
+        errors.inicio = [{ message: 'Data do início precisa ser anterior à data de início.' }];
     }
 
     return { values, errors, valid };
@@ -144,6 +145,10 @@ const salvarDados = async (key, label, genero = 'o') => {
 
     const { errors } = resolver({ values });
 
+    if (errors[key] || form[key] === props.tarefa[key]) {
+        return;
+    }
+
     if (key === 'inicio' || key === 'fim') {
         if (form[key].toISOString() === new Date(props.tarefa[key]).toISOString()) {
             return;
@@ -163,10 +168,6 @@ const salvarDados = async (key, label, genero = 'o') => {
 
             return;
         }
-    }
-
-    if (errors[key] || form[key] === props.tarefa[key]) {
-        return;
     }
 
     salvando.value = true;
