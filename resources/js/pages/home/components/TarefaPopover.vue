@@ -8,6 +8,7 @@ import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import api from "@/axios.js";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
 import Popover from "primevue/popover";
 import Tabs from 'primevue/tabs';
@@ -26,6 +27,8 @@ import ProgressSpinner from "primevue/progressspinner";
 import Button from "primevue/button";
 import SelectColaboradores from "@/pages/home/components/SelectColaboradores.vue";
 import SelectMaquinas from "@/pages/home/components/SelectMaquinas.vue";
+
+dayjs.extend(customParseFormat);
 
 const props = defineProps(['tarefa']);
 
@@ -200,20 +203,14 @@ const validarDisponibilidade = () => {
             return col.id === colaborador.id;
         });
 
-        console.log(colaboradorComTarefas)
-
-        colaboradorComTarefas.tarefas.forEach((tarefa) => {
+        colaboradorComTarefas.tarefas.filter((tarefa) => tarefa.id !== props.tarefa.id).forEach((tarefa) => {
             const inicioExistente = new Date(tarefa.inicio);
-            console.log(inicioExistente);
             const fimExistente = new Date(tarefa.fim);
-            console.log(fimExistente);
 
-            const inicioNovo = new Date(form.inicio);
-            console.log(inicioNovo);
-            const fimNovo = new Date(form.fim);
-            console.log(fimNovo);
+            const inicioNovo = dayjs(form.inicio);
+            const fimNovo = dayjs(form.fim);
 
-            const conflito = inicioNovo < fimExistente && fimNovo > inicioExistente;
+            const conflito = inicioNovo.isBefore(fimExistente, 'minute') && fimNovo.isAfter(inicioExistente, 'minute');
 
             if (conflito) {
                 throw new HorarioIndisponivelError(
@@ -226,6 +223,8 @@ const validarDisponibilidade = () => {
 }
 
 const confirmarExclusaoTarefa = async () => {
+    isPopoverDismissable.value = false;
+
     confirm.require({
         header: 'Confirmação',
         message: `Tem certeza que deseja excluir a tarefa "${props.tarefa.titulo}"?`,
@@ -237,8 +236,13 @@ const confirmarExclusaoTarefa = async () => {
         acceptProps: {
             label: 'Sim'
         },
-        accept: () => {
-            excluirTarefa();
+        accept: async () => {
+            isPopoverDismissable.value = true;
+
+            await excluirTarefa();
+        },
+        reject: () => {
+            isPopoverDismissable.value = true;
         }
     });
 }
