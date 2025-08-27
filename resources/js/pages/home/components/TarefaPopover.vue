@@ -1,6 +1,8 @@
 <script setup>
 import { reactive, ref, nextTick } from 'vue';
 import { useTarefasStore } from "@/stores/tarefas.js";
+import { useColaboradoresStore } from "@/stores/colaboradores.js";
+import { useMaquinasStore } from "@/stores/maquinas.js";
 import { useLoadingStore } from "@/stores/loading.js";
 import { Form } from "@primevue/forms";
 import { useToast } from "primevue/usetoast";
@@ -37,6 +39,8 @@ const props = defineProps(['tarefa']);
 const emits = defineEmits(['update:cor', 'update:data']);
 
 const tarefasStore = useTarefasStore();
+const colaboradoresStore = useColaboradoresStore();
+const maquinasStore = useMaquinasStore();
 const loading = useLoadingStore();
 
 const tarefaPopover = ref(null);
@@ -154,11 +158,19 @@ const salvarDatas = (key, label) => {
 
         salvarMudancas(params, key);
 
-        emits('update:data', { key, value: form[key] });
-
         salvando.value = false;
 
+        emits('update:data', { key, value: form[key] });
+
         showMessage(`${label} atualizada!`);
+
+        if (props.tarefa.colaboradores.length > 0) {
+            colaboradoresStore.getColaboradores();
+        }
+
+        if (props.tarefa.maquinas.length > 0) {
+            maquinasStore.getMaquinas();
+        }
     } catch (e) {
         salvando.value = false;
 
