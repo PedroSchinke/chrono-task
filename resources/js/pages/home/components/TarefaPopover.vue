@@ -29,12 +29,12 @@ import ProgressSpinner from "primevue/progressspinner";
 import Button from "primevue/button";
 import SelectColaboradores from "@/pages/home/components/SelectColaboradores.vue";
 import SelectMaquinas from "@/pages/home/components/SelectMaquinas.vue";
+import {HorarioIndisponivelError} from "@/errors/HorarioIndisponivelError.js";
 
 dayjs.extend(customParseFormat);
 
 const props = defineProps(['tarefa']);
-
-const emits = defineEmits(['change-color']);
+const emits = defineEmits(['update:cor', 'update:data']);
 
 const tarefasStore = useTarefasStore();
 const loading = useLoadingStore();
@@ -105,37 +105,14 @@ const hidePopover = () => {
     resetarDados();
 }
 
-const salvarDados = async (key, label, genero = 'o') => {
+const salvarDados = (key, label, genero = 'o') => {
     hideMessage();
 
     const values = { ...form };
 
     const { errors } = resolver({ values });
 
-    if (errors[key] || form[key] === props.tarefa[key]) {
-        return;
-    }
-
-    if (key === 'inicio' || key === 'fim') {
-        if (form[key].toISOString() === new Date(props.tarefa[key]).toISOString()) {
-            return;
-        }
-
-        try {
-            validarDisponibilidade(form.inicio, form.fim);
-        } catch (e) {
-            toast.add({
-                summary: e.title,
-                detail: e.message,
-                severity: 'error',
-                life: 5000
-            });
-
-            form[key] = props.tarefa[key];
-
-            return;
-        }
-    }
+    if (errors[key] || form[key] === props.tarefa[key]) return;
 
     salvando.value = true;
 
@@ -144,9 +121,7 @@ const salvarDados = async (key, label, genero = 'o') => {
     params[key] = form[key];
 
     try {
-        await api.post(`/tarefa/${props.tarefa.id}/${key}/alterar`, params);
-
-        tarefasStore.updateTarefa(props.tarefa.id, params);
+        salvarMudancas(params, key);
 
         salvando.value = false;
 
@@ -163,6 +138,55 @@ const salvarDados = async (key, label, genero = 'o') => {
             life: 5000
         });
     }
+}
+
+const salvarDatas = (key, label) => {
+    if (form[key].toISOString() === new Date(props.tarefa[key]).toISOString()) return;
+
+    try {
+        validarDisponibilidade(form.inicio, form.fim);
+
+        salvando.value = true;
+
+        const params = {};
+
+        params[key] = form[key];
+
+        salvarMudancas(params, key);
+
+        emits('update:data', { key, value: form[key] });
+
+        salvando.value = false;
+
+        showMessage(`${label} atualizada!`);
+    } catch (e) {
+        salvando.value = false;
+
+        if (e instanceof HorarioIndisponivelError) {
+            toast.add({ summary: e.title, detail: e.message, severity: 'error', life: 5000 });
+        } else if (e.status !== 500) {
+            let message = e.message;
+
+            if (e.response) {
+                message = e.response.data.message;
+            }
+
+            toast.add({ severity: 'error', summary: 'Erro', detail: message, life: 5000 });
+        } else {
+            toast.add({
+                severity: 'error',
+                summary: 'Algo deu errado...',
+                detail: `Não foi possível reposicionar ${props.tarefa.titulo}`,
+                life: 3000
+            });
+        }
+    }
+}
+
+const salvarMudancas = async (params, key) => {
+    await api.post(`/tarefa/${props.tarefa.id}/${key}/alterar`, params);
+
+    tarefasStore.updateTarefa(props.tarefa.id, params);
 }
 
 const validarDisponibilidade = (inicio, fim) => {
@@ -272,6 +296,8 @@ const removerMaquina = (maquinaId) => {
 }
 
 const salvarCor = async () => {
+    if (form.cor.replace('#', '') === props.tarefa.cor.replace('#', '')) return;
+
     const params = { cor: form.cor };
 
     try {
@@ -291,7 +317,7 @@ const salvarCor = async () => {
 }
 
 const changeColor = () => {
-    emits('change-color', form.cor);
+    emits('update:cor', form.cor);
 }
 
 const openSelectColaboradores = () => {
@@ -426,7 +452,7 @@ defineExpose({ toggle });
                                     show-icon
                                     show-time
                                     fluid
-                                    @hide="salvarDados('inicio', 'Início')"
+                                    @hide="salvarDatas('inicio', 'Início')"
                                 />
                             </IftaLabel>
 
@@ -457,7 +483,7 @@ defineExpose({ toggle });
                                     show-icon
                                     show-time
                                     fluid
-                                    @hide="salvarDados('fim', 'Fim')"
+                                    @hide="salvarDatas('fim', 'Fim')"
                                 />
                             </IftaLabel>
 

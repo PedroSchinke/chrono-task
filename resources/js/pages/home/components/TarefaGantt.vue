@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useTarefasStore } from "@/stores/tarefas.js";
+import { useColaboradoresStore } from "@/stores/colaboradores.js";
+import { useMaquinasStore } from "@/stores/maquinas.js";
 import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from "primevue/usetoast";
 import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
@@ -27,6 +29,8 @@ const props = defineProps([
 const tarefaLocal = ref({ ...props.tarefa });
 
 const tarefasStore = useTarefasStore();
+const colaboradoresStore = useColaboradoresStore();
+const maquinasStore = useMaquinasStore();
 
 const loading = useLoadingStore();
 
@@ -203,6 +207,14 @@ const reposicionarTarefa = async (dataInicio, dataFim) => {
         loading.hide();
 
         tarefasStore.getTarefas();
+
+        if (props.tarefa.colaboradores.length > 0) {
+            colaboradoresStore.getColaboradores();
+        }
+
+        if (props.tarefa.maquinas.length > 0) {
+            maquinasStore.getMaquinas();
+        }
     } catch (e) {
         loading.hide();
 
@@ -243,7 +255,12 @@ const toggle = (event) => {
 </script>
 
 <template>
-    <TarefaPopover ref="tarefaPopover" :tarefa="props.tarefa" @change-color="(value) => cor = value" />
+    <TarefaPopover
+        ref="tarefaPopover"
+        :tarefa="props.tarefa"
+        @update:cor="(value) => cor = value"
+        @update:data="({ key, value }) => tarefaLocal[key] = value"
+    />
 
     <div
         ref="blocoTarefa"
