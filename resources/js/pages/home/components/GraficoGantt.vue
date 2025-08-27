@@ -1,12 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useTarefasStore } from "@/stores/tarefas.js";
-import { useLoadingStore } from "@/stores/loading.js";
-import { useToast } from "primevue/usetoast";
 import { getDates } from "@/helpers/getDates.js";
 import { getDiaSemana } from "@/helpers/getDiaSemana.js";
-import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
-import api from "@/axios.js";
 import dayjs from "dayjs";
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import Select from 'primevue/select';
@@ -16,8 +12,6 @@ import AdicionarTarefa from "./AdicionarTarefa.vue";
 import LinhaGantt from './LinhaGantt.vue';
 
 dayjs.extend(isSameOrBefore);
-
-const toast = useToast();
 
 const props = defineProps(['maquinas' , 'horariosDisponiveis']);
 
@@ -66,77 +60,12 @@ const horasExibidas = ['00h', '06h', '12h', '18h'];
 const larguraDiaPx = 200;
 const alturaTarefaPx = 60;
 
-const loading = useLoadingStore();
-
 const dias = computed(() => {
     return getDates(dayjs().startOf('day'), dayjs().add(qtdDiasExibidos.value.dias, 'day'));
 });
 
-const reposicionarTarefa = async ({ tarefa, deslocamentoX, deslocamentoY }) => {
-    let idMaquina = tarefa.id_maquina;
-
-    if (deslocamentoY !== 0) {
-        const maquina = props.maquinas.find((maquina) => {
-            return maquina.id === tarefa.id_maquina + deslocamentoY;
-        });
-
-        if (maquina) {
-            idMaquina = maquina.id;
-        }
-    }
-
-    const novaDataInicio = dayjs(tarefa.inicio).add(deslocamentoX, 'minute');
-    const novaDataFim = dayjs(tarefa.fim).add(deslocamentoX, 'minute');
-
-    const diasReposicionamento = getDates(novaDataInicio, novaDataFim);
-
-    try {
-        //validarHorarios(tarefa, diasReposicionamento, idMaquina);
-
-        loading.show('Reposicionando Tarefa...');
-
-        await api.post(`/tarefa/${tarefa.id}/reposicionar`, {
-            inicio: novaDataInicio.format('YYYY-MM-DD HH:mm:ss'),
-            fim: novaDataFim.format('YYYY-MM-DD HH:mm:ss'),
-            id_maquina: idMaquina
-        });
-
-        loading.hide();
-
-        tarefasStore.getTarefas();
-    } catch (e) {
-        loading.hide();
-
-        if (e instanceof HorarioIndisponivelError) {
-            toast.add({ severity: 'error', summary: e.title, detail: e.message, life: 3000 });
-        } else {
-            toast.add({ severity: 'error', summary: 'Erro', detail: e.message, life: 3000 });
-        }
-    }
-}
-
 const adicionarTarefa = () => {
     adicionarTarefaDialog.value.openDialog();
-}
-
-const validarHorarios = (tarefa, diasReposicionamento, idMaquina) => {
-    // const horariosDisponiveisDaMaquina = props.horariosDisponiveis.filter((horario) => {
-    //     return horario.id_maquina == idMaquina;
-    // });
-    //
-    // diasReposicionamento.forEach((dia) => {
-    //     const diaSemana = getDiaSemana(dia.day()).name;
-    //
-    //     const disponivel = horariosDisponiveisDaMaquina.some((horario) => {
-    //         return diaSemana === horario.dia_semana &&
-    //                tarefa.periodo_diario_inicio >= horario.hora_inicio &&
-    //                tarefa.periodo_diario_fim <= horario.hora_fim;
-    //     });
-    //
-    //     if (!disponivel) {
-    //         throw new HorarioIndisponivelError('Não foi possível mover tarefa', 'Horário indisponível');
-    //     }
-    // });
 }
 
 const getLeftByIndex = (index) => {
@@ -209,7 +138,6 @@ const getLeftByIndex = (index) => {
             :altura-tarefa-px="alturaTarefaPx"
             :horas-exibidas="horasExibidas"
             :horarios-disponiveis="props.horariosDisponiveis"
-            @reposicionar="(data) => reposicionarTarefa(data)"
         />
     </div>
 </template>

@@ -2,11 +2,7 @@
 import TarefaGantt from "@/pages/home/components/TarefaGantt.vue";
 
 const props = defineProps(['tarefa', 'dias', 'larguraDiaPx', 'alturaTarefaPx', 'horasExibidas', 'horariosDisponiveis']);
-const emit = defineEmits(['reposicionar']);
 
-const reposicionarTarefa = (data) => {
-    emit('reposicionar', data);
-}
 </script>
 
 <template>
@@ -25,7 +21,6 @@ const reposicionarTarefa = (data) => {
                 :altura-tarefa-px="props.alturaTarefaPx"
                 :horas-exibidas="props.horasExibidas"
                 :horarios-disponiveis="props.horariosDisponiveis"
-                @reposicionar="(data) => reposicionarTarefa(data)"
             />
         </div>
     </div>

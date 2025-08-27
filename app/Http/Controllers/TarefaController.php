@@ -120,8 +120,7 @@ class TarefaController extends Controller
 
         $tarefa->update([
             'inicio' => $request->get('inicio'),
-            'fim' => $request->get('fim'),
-            'id_maquina' => $request->get('id_maquina')
+            'fim' => $request->get('fim')
         ]);
 
         return response()->json(['mensagem' => 'Tarefa movida com sucesso!']);
