@@ -6,12 +6,14 @@ import { useMaquinasStore } from "@/stores/maquinas.js";
 import { useLoadingStore } from "@/stores/loading.js";
 import { useToast } from "primevue/usetoast";
 import { HorarioIndisponivelError } from "@/errors/HorarioIndisponivelError.js";
+import { getAvatarStyle } from "@/helpers/getAvatarStyle.js";
 import {
     validarDisponibilidadeColaboradores,
     validarDisponibilidadeMaquinas
 } from "@/helpers/validarDisponibilidade.js";
 import dayjs from "dayjs";
 import api from "@/axios.js";
+import Avatar from "primevue/avatar";
 import TarefaPopover from "@/pages/home/components/TarefaPopover.vue";
 
 const toast = useToast();
@@ -272,7 +274,29 @@ const toggle = (event) => {
     >
         <div class="resize-handle left" @mousedown="startResize('start', $event)"></div>
 
-        <div class="bloco-texto" @mousedown="startDrag">{{ props.tarefa.titulo }}</div>
+        <div class="tarefa-bloco-content" @mousedown="startDrag">
+            <div v-if="props.tarefa.colaboradores.length > 0">
+                <Avatar
+                    v-for="(colaborador, index) in props.tarefa.colaboradores"
+                    :key="colaborador.id"
+                    :label="colaborador.primeiro_nome[0] + colaborador.sobrenome[0]"
+                    :style="getAvatarStyle(index)"
+                    class="mr-2"
+                    shape="circle"
+                />
+            </div>
+
+            <div v-if="props.tarefa.maquinas.length > 0">
+                <Avatar
+                    v-for="(maquinas, index) in props.tarefa.maquinas"
+                    :key="maquinas.id"
+                    :label="maquinas.nome[0]"
+                    :style="getAvatarStyle(index)"
+                    class="mr-2"
+                    shape="circle"
+                />
+            </div>
+        </div>
 
         <div class="resize-handle right" @mousedown="startResize('end', $event)"></div>
     </div>
@@ -313,12 +337,13 @@ const toggle = (event) => {
     cursor: e-resize;
 }
 
-.bloco-texto {
+.tarefa-bloco-content {
     width: 100%;
     height: 100%;
+    padding: 0 10px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     font-weight: 600;
     text-align: center;
     white-space: break-spaces;
