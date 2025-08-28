@@ -24,7 +24,13 @@ const adicionarColaborador = () => {
         <header>
             <h1>Colaboradores</h1>
 
-            <Button title="Adicionar Colaborador" icon="pi pi-plus" rounded @click="adicionarColaborador()" />
+            <Button
+                v-tooltip.top="'Adicionar Colaborador'"
+                aria-label="Adicionar Colaborador"
+                icon="pi pi-plus"
+                rounded
+                @click="adicionarColaborador()"
+            />
         </header>
 
         <DataTable :value="colaboradoresStore.data.data" :loading="loading">

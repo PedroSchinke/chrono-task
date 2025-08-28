@@ -8,6 +8,7 @@ import PrimeVue from 'primevue/config';
 import Material from '@primeuix/themes/material';
 import ToastService from 'primevue/toastservice';
 import ConfirmationService from "primevue/confirmationservice";
+import Tooltip from 'primevue/tooltip';
 
 createInertiaApp({
     resolve: name => import(`./pages/home/${name}.vue`),
@@ -28,6 +29,7 @@ createInertiaApp({
         vueApp.use(ToastService);
         vueApp.use(ConfirmationService);
         vueApp.use(pinia);
+        vueApp.directive('tooltip', Tooltip);
         vueApp.mount(el);
     },
 });

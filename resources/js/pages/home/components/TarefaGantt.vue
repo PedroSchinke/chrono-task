@@ -278,9 +278,11 @@ const toggle = (event) => {
             <div v-if="props.tarefa.colaboradores.length > 0">
                 <Avatar
                     v-for="(colaborador, index) in props.tarefa.colaboradores"
+                    v-tooltip.top="colaborador.nome_completo"
                     :key="colaborador.id"
                     :label="colaborador.primeiro_nome[0] + colaborador.sobrenome[0]"
                     :style="getAvatarStyle(index)"
+                    :aria-label="colaborador.nome_completo"
                     class="mr-2"
                     shape="circle"
                 />
@@ -288,10 +290,12 @@ const toggle = (event) => {
 
             <div v-if="props.tarefa.maquinas.length > 0">
                 <Avatar
-                    v-for="(maquinas, index) in props.tarefa.maquinas"
-                    :key="maquinas.id"
-                    :label="maquinas.nome[0]"
+                    v-for="(maquina, index) in props.tarefa.maquinas"
+                    v-tooltip.top="maquina.nome"
+                    :key="maquina.id"
+                    :label="maquina.nome[0]"
                     :style="getAvatarStyle(index)"
+                    :aria-label="maquina.nome"
                     class="mr-2"
                     shape="circle"
                 />

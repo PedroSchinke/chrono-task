@@ -92,7 +92,13 @@ const getLeftByIndex = (index) => {
                 :highlightOnSelect="false"
             />
 
-            <Button title="Adicionar Tarefa" icon="pi pi-plus" rounded @click="adicionarTarefa()" />
+            <Button
+                v-tooltip.bottom="'Adicionar Tarefa'"
+                aria-label="Adicionar Tarefa"
+                icon="pi pi-plus"
+                rounded
+                @click="adicionarTarefa()"
+            />
         </div>
     </header>
 

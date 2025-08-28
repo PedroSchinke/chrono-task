@@ -24,7 +24,13 @@ const openAdicionarMaquina = () => {
         <header>
             <h1>Máquinas</h1>
 
-            <Button title="Adicionar Máquina" icon="pi pi-plus" rounded @click="openAdicionarMaquina()" />
+            <Button
+                v-tooltip.top="'Adicionar Máquina'"
+                aria-label="Adicionar Máquina"
+                icon="pi pi-plus"
+                rounded
+                @click="openAdicionarMaquina()"
+            />
         </header>
 
         <DataTable :value="maquinasStore.data.data" :loading="loadingMaquinas">

@@ -35,7 +35,7 @@ import {HorarioIndisponivelError} from "@/errors/HorarioIndisponivelError.js";
 
 dayjs.extend(customParseFormat);
 
-const props = defineProps(['tarefa']);
+const props = defineProps(['tarefa', 'refToAppend']);
 const emits = defineEmits(['update:cor', 'update:data']);
 
 const tarefasStore = useTarefasStore();
@@ -227,6 +227,9 @@ const confirmarExclusaoTarefa = async () => {
         },
         reject: () => {
             isPopoverDismissable.value = true;
+        },
+        onHide: () => {
+            isPopoverDismissable.value = true;
         }
     });
 }
@@ -412,7 +415,8 @@ defineExpose({ toggle });
 
                                 <ColorPicker
                                     v-model="form.cor"
-                                    title="Selecionar Cor"
+                                    v-tooltip.top="'Selecionar Cor'"
+                                    aria-label="Selecionar Cor"
                                     input-id="cor"
                                     name="cor"
                                     format="hex"
@@ -591,10 +595,12 @@ defineExpose({ toggle });
             </Message>
 
             <Button
-                title="Excluir Tarefa"
+                v-tooltip.top="'Excluir Tarefa'"
+                aria-label="Excluir Tarefa"
                 icon="pi pi-trash"
                 severity="danger"
                 variant="text"
+                size="small"
                 class="botao-excluir"
                 rounded
                 @click="confirmarExclusaoTarefa()"
@@ -607,7 +613,7 @@ defineExpose({ toggle });
 .popover-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
 }
 
 .popover-info {
@@ -624,7 +630,8 @@ defineExpose({ toggle });
 
 .popover-footer {
     width: 100%;
-    height: 48px;
+    height: 42px;
+    padding: 0 15px 10px 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -641,8 +648,13 @@ defineExpose({ toggle });
     right: 16px;
 }
 
+:deep(.p-popover-content) {
+    padding: 10px;
+}
+
 :deep(.p-tabpanels) {
-    padding: 20px 0;
+    padding: 10px;
+    height: 268px;
 }
 
 :deep(.p-chip) {

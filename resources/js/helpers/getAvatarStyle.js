@@ -30,6 +30,7 @@ export function getAvatarStyle(index) {
         "border": `1px solid rgba(${rgb}, 0.5)`,
         width: '40px',
         height: '40px',
-        "margin-left": marginLeft
+        "margin-left": marginLeft,
+        cursor: 'pointer'
     };
 }
