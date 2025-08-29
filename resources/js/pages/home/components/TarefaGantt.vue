@@ -249,9 +249,22 @@ const validarDisponibilidade = (inicio, fim) => {
     validarDisponibilidadeMaquinas(props.tarefa.maquinas, inicio, fim, props.tarefa.id);
 }
 
-const toggle = (event) => {
+const toggle = (event, tabIndex = 0) => {
     if (!blocoFoiArrastado.value) {
-        tarefaPopover.value.toggle(event);
+        tarefaPopover.value.toggle(event, tabIndex);
+    }
+}
+
+const popoverAtivo = ref(null)
+const tabIndex = ref('0');
+
+function onClickAvatar(tarefaId, tab) {
+    if (popoverAtivo.value === tarefaId) {
+        // se já está aberto, fecha
+        popoverAtivo.value = null
+    } else {
+        popoverAtivo.value = tarefaId
+        tabIndex.value = tab
     }
 }
 </script>
@@ -259,23 +272,26 @@ const toggle = (event) => {
 <template>
     <TarefaPopover
         ref="tarefaPopover"
+        :key="props.tarefa.id"
         :tarefa="props.tarefa"
+        :tab="tabIndex"
         @update:cor="(value) => cor = value"
         @update:data="({ key, value }) => tarefaLocal[key] = value"
+        @update:tab-index="(index) => tabIndex = index"
     />
 
     <div
         ref="blocoTarefa"
-        :id="`tarefa-${tarefaLocal.id}`"
-        :key="tarefaLocal.id"
+        :id="`tarefa-${props.tarefa.id}`"
+        :key="props.tarefa.id"
         :style="blocoStyle"
         class="tarefa-bloco"
-        @click="toggle"
+        @click="toggle($event, '0')"
     >
         <div class="resize-handle left" @mousedown="startResize('start', $event)"></div>
 
         <div class="tarefa-bloco-content" @mousedown="startDrag">
-            <div v-if="props.tarefa.colaboradores.length > 0">
+            <div v-if="props.tarefa.colaboradores.length > 0" @click="onClickAvatar(props.tarefa.id, '1')">
                 <Avatar
                     v-for="(colaborador, index) in props.tarefa.colaboradores"
                     v-tooltip.top="colaborador.nome_completo"
@@ -288,7 +304,7 @@ const toggle = (event) => {
                 />
             </div>
 
-            <div v-if="props.tarefa.maquinas.length > 0">
+            <div v-if="props.tarefa.maquinas.length > 0" @click="onClickAvatar(props.tarefa.id, '2')">
                 <Avatar
                     v-for="(maquina, index) in props.tarefa.maquinas"
                     v-tooltip.top="maquina.nome"

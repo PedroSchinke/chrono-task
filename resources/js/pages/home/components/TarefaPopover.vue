@@ -35,8 +35,8 @@ import {HorarioIndisponivelError} from "@/errors/HorarioIndisponivelError.js";
 
 dayjs.extend(customParseFormat);
 
-const props = defineProps(['tarefa', 'refToAppend']);
-const emits = defineEmits(['update:cor', 'update:data']);
+const props = defineProps(['tarefa', 'tab']);
+const emits = defineEmits(['update:cor', 'update:data', 'update:tabIndex']);
 
 const tarefasStore = useTarefasStore();
 const colaboradoresStore = useColaboradoresStore();
@@ -92,19 +92,14 @@ const resolver = ({ values, valid }) => {
     return { values, errors, valid };
 }
 
-const toggle = (event) => {
-    tarefaPopover.value.toggle(event);
-
-    nextTick(() => {
-        tarefaPopover.value.alignOverlay();
-    });
-}
+const toggle = (event) => tarefaPopover.value.toggle(event);
 
 const hidePopover = () => {
     if (cor.value !== form.cor) {
         salvarCor();
     }
 
+    emits('update:tabIndex', '0');
     hideMessage();
     resetarDados();
 }
@@ -380,11 +375,13 @@ defineExpose({ toggle });
 
     <Popover
         ref="tarefaPopover"
+        :key="props.tarefa.id"
         :dismissable="isPopoverDismissable"
+        :append-to="'body'"
         @show="resetarDados()"
         @hide="hidePopover()"
     >
-        <Tabs value="0">
+        <Tabs :value="props.tab">
             <TabList>
                 <Tab value="0">Geral</Tab>
                 <Tab value="1">Colaboradores</Tab>
@@ -436,7 +433,7 @@ defineExpose({ toggle });
                             </Message>
                         </div>
 
-                        <div class="popover-info">
+                        <div>
                             <IftaLabel style="width: 100%;">
                                 <label for="descricao">Descrição (máx. 500)</label>
 
@@ -453,7 +450,7 @@ defineExpose({ toggle });
                             </IftaLabel>
                         </div>
 
-                        <div class="popover-info">
+                        <div>
                             <IftaLabel style="width: 100%;">
                                 <label for="inicio">Início</label>
 
@@ -483,7 +480,7 @@ defineExpose({ toggle });
                             </Message>
                         </div>
 
-                        <div class="popover-info">
+                        <div>
                             <IftaLabel style="width: 100%;">
                                 <label for="fim">Fim</label>
 
@@ -617,6 +614,7 @@ defineExpose({ toggle });
 }
 
 .popover-info {
+    padding: 0 5px;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -659,5 +657,6 @@ defineExpose({ toggle });
 
 :deep(.p-chip) {
     width: fit-content;
+    padding: 7px 12px;
 }
 </style>
